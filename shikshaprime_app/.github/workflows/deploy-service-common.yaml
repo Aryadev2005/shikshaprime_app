@@ -1,0 +1,77 @@
+name: Common Deploy Workflow
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+      service_path:
+        required: true
+        type: string
+      service_port:
+        required: true
+        type: string
+    secrets:
+      DEPLOY_SERVER_HOST:
+        required: true
+      DEPLOY_SERVER_USER:
+        required: true
+      DEPLOY_SSH_PRIVATE_KEY:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Check secrets availability 
+        run: | 
+          if [ -z "${{ secrets.DEPLOY_SERVER_HOST }}" ]; then 
+            echo "DEPLOY_SERVER_HOST is NOT set" 
+            exit 1 
+          else 
+            echo "DEPLOY_SERVER_HOST is available" 
+          fi 
+          if [ -z "${{ secrets.DEPLOY_SERVER_USER }}" ]; then 
+            echo "DEPLOY_SERVER_USER is NOT set" 
+            exit 1 
+          else 
+            echo "DEPLOY_SERVER_USER is available" 
+          fi 
+          if [ -z "${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}" ]; then 
+            echo "DEPLOY_SSH_PRIVATE_KEY is NOT set" 
+            exit 1 
+          else 
+            echo "DEPLOY_SSH_PRIVATE_KEY is available" 
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --prefix ${{ inputs.service_path }}
+
+      - name: Build service
+        run: npm run build --prefix ${{ inputs.service_path }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DEPLOY_SERVER_HOST }}
+          username: ${{ secrets.DEPLOY_SERVER_USER }}
+          key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/shikshaprime-college/ShikshaPrime_new/
+            git reset --hard HEAD
+            # Pull latest code
+            git pull origin main          
+            cd ${{ inputs.service_path }}
+            npm install --production
+            npm run build
+            pm2 restart ecosystem.config.js --env production || pm2 start ecosystem.config.js --env production

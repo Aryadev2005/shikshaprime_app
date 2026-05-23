@@ -1,0 +1,62 @@
+name: Deploy AI-ML Service
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Check secrets availability 
+        run: | 
+          if [ -z "${{ secrets.DEPLOY_SERVER_HOST }}" ]; then 
+            echo "DEPLOY_SERVER_HOST is NOT set" 
+            exit 1 
+          else 
+            echo "DEPLOY_SERVER_HOST is available" 
+          fi 
+          if [ -z "${{ secrets.DEPLOY_SERVER_USER }}" ]; then 
+            echo "DEPLOY_SERVER_USER is NOT set" 
+            exit 1 
+          else 
+            echo "DEPLOY_SERVER_USER is available" 
+          fi 
+          if [ -z "${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}" ]; then 
+            echo "DEPLOY_SSH_PRIVATE_KEY is NOT set" 
+            exit 1 
+          else 
+            echo "DEPLOY_SSH_PRIVATE_KEY is available" 
+          fi
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.DEPLOY_SERVER_HOST }}
+          username: ${{ secrets.DEPLOY_SERVER_USER }}
+          key: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/shikshaprime-college/ShikshaPrime_new/
+            git reset --hard HEAD
+            # Pull latest code
+            git pull origin main          
+            
+            # Navigate to AI-ML attendance service directory
+            cd AI-ml/services/attendance
+            
+            # Environment variables for uv installation correctly scoping to linux system
+            export UV_LINK_MODE=copy
+            export UV_PROJECT_ENVIRONMENT=$HOME/.venvs/attendance-service
+            export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+            
+            # Ensure log directory exists
+            mkdir -p outputs/logs
+            
+            # Refresh dependencies
+            uv sync
+            
+            # Restart the service via supervisor (if already running) or start it
+            uv run supervisorctl -c supervisord.conf restart attendance-service || uv run supervisord -c supervisord.conf

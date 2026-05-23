@@ -1,0 +1,128 @@
+.ie-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Filter Card */
+.ie-filter-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.ie-filter-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.ie-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.ie-date-input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.ie-view-btn {
+  background: var(--primary);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+}
+
+/* Summary Cards */
+.ie-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.ie-summary-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.ie-summary-card h3 {
+  font-size: 0.85rem;
+  color: #718096;
+}
+
+.ie-summary-card p {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+/* Tables */
+.ie-table-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.ie-table-title {
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+}
+/* Table */
+.ie-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ie-table th {
+  background: #f8f9fc;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 2px solid #edf2f7;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ie-table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 0.875rem;
+}
+
+/* Right-align numeric column */
+.ie-table th:nth-child(2),
+.ie-table td:nth-child(2) {
+  text-align: right;
+}
+
+/* Hover */
+.ie-table tbody tr:hover td {
+  background: #f7fafc;
+}
+
+/* Amount styling */
+.ie-col-amount {
+  text-align: right;
+  font-weight: 600;
+}
+/* Amount styling */
+.ie-col-ledger {
+  text-align: left;
+  font-weight: 600;
+}

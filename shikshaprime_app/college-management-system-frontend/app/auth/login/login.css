@@ -1,0 +1,219 @@
+.login-board {
+    background: url($NEXT_PUBLIC_BASE_PATH/images/bg.png);
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    /* Assuming Inter or similar */
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    margin-top: 2rem;
+}
+
+.login-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    flex: 0 0 50%;
+}
+
+.login-board .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-col {
+    flex: 1;
+}
+
+.custom-input {
+    background: rgba(255, 255, 255, 1) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: var(--text-dark) !important;
+    border-radius: 8px !important;
+    height: 50px !important;
+}
+
+.custom-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.custom-input:focus {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    outline: none !important;
+    color: #ffffff !important;
+}
+
+.custom-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.custom-select-wrapper {
+    position: relative;
+}
+
+.login-board .custom-select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 8px;
+    height: 50px;
+    padding: 0 1rem;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
+.custom-select:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Custom arrow for select */
+.custom-select-wrapper::after {
+    content: '▼';
+    font-size: 0.8rem;
+    color: white;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.login-board .submit-btn {
+    width: 100%;
+    height: 50px;
+    background: var(--bg-gradient);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    margin-top: 1rem;
+}
+
+.submit-btn:hover {
+    transform: scale(1.02);
+    opacity: 0.95;
+}
+
+/* Override shadcn button if used directly, or just use class */
+.institutionLogo {
+    background-color: #ffffff;
+    border-radius: 20px;
+    overflow: hidden;
+    flex: 0 0 35%;
+    max-width: 35%;
+    min-height: 360px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.institutionLogo img {
+    width: 40%;
+}
+
+.institutionLogo p {
+    color: var(--text-dark);
+    margin-top: 1rem;
+    font-weight: bold;
+    font-size: var(--subheading-font-size);
+}
+
+.login-panel {
+    width: 70%;
+}
+
+.forgotPassword {
+    float: right;
+    margin-top: 10px;
+    cursor: pointer;
+    font-size: var(--normal-size);
+}
+
+.stu-registration {
+    background-color: var(--secondary);
+    border-radius: var(--radius-sm);
+    padding: 8px 20px;
+    margin-top: 50px;
+    font-size: 0.9rem;
+    font-weight: 400;
+    width: 85%;
+    text-align: center;
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.stu-registration:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+
+    .institutionLogo,
+    .login-card {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .login-panel {
+        width: 95%;
+    }
+
+    .login-board {
+        padding: 1rem 0rem;
+    }
+
+    .login-header {
+        margin-bottom: 1rem;
+    }
+
+    .login-header img {
+        width: 150px;
+    }
+
+    .login-card {
+        padding: 1.5rem;
+    }
+}

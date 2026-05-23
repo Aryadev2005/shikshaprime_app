@@ -1,0 +1,14 @@
+__pycache__/
+.venv/
+.env
+.pytest_cache/
+.DS_Store
+*.pyc
+*.pyo
+dist/
+build/
+*.egg-info/
+
+# Node.js ignores
+node_modules/
+lesson_plan_output.json

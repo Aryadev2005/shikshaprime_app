@@ -1,0 +1,166 @@
+/* ============================================
+   Fee Assignment Page — Layout & Components
+   ============================================ */
+
+/* Wrapper */
+.fee-assignment-wrapper {
+    padding: 0;
+    min-height: calc(100vh - 64px);
+    font-family: 'Inter', sans-serif;
+}
+
+/* Header */
+.fee-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.fee-header h3 {
+    color: var(--text-dark);
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Form Card */
+.fee-form-card {
+    background: #FFFFFF99;
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-sm);
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Grid for filters */
+.fee-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    gap: 1.25rem;
+    align-items: flex-end;
+}
+
+@media (max-width: 640px) {
+    .fee-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Form group */
+.fee-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.fee-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+/* Select / Input */
+.fee-input {
+    width: 100%;
+    height: 40px;
+    padding: 0 0.75rem;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #4A5568;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fee-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(233, 90, 67, 0.15);
+}
+
+/* Table Wrapper */
+.fee-table-card {
+    background: #FFFFFF99;
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-sm);
+    padding: 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Table Title */
+.fee-table-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 0.75rem;
+}
+
+/* Empty State */
+.fee-empty-cell {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #718096;
+    font-size: 0.9rem;
+}
+
+/* Table (inherits your global custom-student-table styles) */
+.custom-student-table td {
+    background: #ffffff;
+}
+
+/* Checkbox alignment */
+.fee-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Assign Button */
+.assign-btn {
+    background: var(--bg-gradient);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.3s;
+}
+
+.assign-btn:hover {
+    box-shadow: 0px 0px 10px rgba(233, 90, 67, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Pagination */
+.fee-pagination {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.fee-page-btn {
+    padding: 6px 12px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.fee-page-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.fee-page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

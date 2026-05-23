@@ -1,0 +1,13 @@
+{
+  "name": "lesson-planner-node-client",
+  "version": "1.0.0",
+  "description": "Node.js client — extracts PDF text and calls the AI Lesson Planner API",
+  "main": "generate_lesson_plan.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node generate_lesson_plan.js"
+  },
+  "dependencies": {
+    "pdf-parse": "^1.1.1"
+  }
+}

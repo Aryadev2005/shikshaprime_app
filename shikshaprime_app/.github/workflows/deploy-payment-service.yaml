@@ -1,0 +1,16 @@
+name: Deploy Payment Service
+
+on:
+  workflow_dispatch:
+
+jobs:
+  call-common:
+    uses: ./.github/workflows/deploy-service-common.yaml
+    with:
+      service_name: payment-service
+      service_path: services/payment-service
+      service_port: "9053"
+    secrets:
+      DEPLOY_SERVER_HOST: ${{ secrets.DEPLOY_SERVER_HOST }}
+      DEPLOY_SERVER_USER: ${{ secrets.DEPLOY_SERVER_USER }}
+      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}

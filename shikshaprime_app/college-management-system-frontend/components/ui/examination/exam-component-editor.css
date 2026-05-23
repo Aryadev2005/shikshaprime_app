@@ -1,0 +1,117 @@
+.exam-editor-page {
+  padding: 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.editor-field {
+  margin-bottom: 16px;
+}
+
+.editor-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.template-card {
+  border: 1px solid #dcdcdc;
+  padding: 12px;
+  border-radius: 6px;
+  background: #fafafa;
+  cursor: grab;
+  transition: 0.2s ease;
+}
+
+.template-card:hover {
+  background: #f0f0f0;
+  border-color: #bdbdbd;
+}
+
+.mapping-form {
+  border: 1px solid #dcdcdc;
+  background: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.mapping-form input,
+.mapping-form select {
+  width: 100%;
+}
+
+.exam-component-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.exam-component-list.drag-over {
+  background: #eef5ff;
+  border: 2px dashed #3b82f6;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.exam-component-card {
+  border: 1px solid #dcdcdc;
+  padding: 12px;
+  border-radius: 6px;
+  background: white;
+  cursor: grab;
+  transition: 0.2s ease;
+}
+
+.exam-component-card:hover {
+  background: #f7f7f7;
+  border-color: #bdbdbd;
+}
+
+.exam-component-card.drag-over {
+  border-color: #007bff;
+  background: #eef5ff;
+}
+
+.mapping-form label,
+.editor-field label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.mapping-form .grid {
+  margin-top: 10px;
+}
+
+.mapping-form button {
+  margin-top: 10px;
+}
+
+.template-card:active,
+.exam-component-card:active {
+  cursor: grabbing;
+}
+
+.template-added-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 12px;
+  width: fit-content;
+}

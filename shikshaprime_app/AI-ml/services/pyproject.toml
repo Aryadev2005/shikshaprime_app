@@ -1,0 +1,22 @@
+[project]
+name = "services"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "google-genai",
+    "python-dotenv",
+    "pillow",
+    "opencv-python",
+    "numpy",
+    "mistralai>=1.10.0",
+    "datauri>=1.0.0",
+    "pandas>=2.3.3",
+    "fastapi>=0.128.0",
+    "uvicorn>=0.40.0",
+    "python-multipart>=0.0.21",
+    "loguru>=0.7.3",
+    "supervisor>=4.3.0",
+    "httpx>=0.27.0",
+]

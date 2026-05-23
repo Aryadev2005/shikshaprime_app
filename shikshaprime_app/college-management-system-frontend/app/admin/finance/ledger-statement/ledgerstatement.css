@@ -1,0 +1,156 @@
+/* -----------------------------------------
+   LEDGER STATEMENT — PAGE CONTAINER
+------------------------------------------*/
+.ledgerstatement-container {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* -----------------------------------------
+   FILTER CARD
+------------------------------------------*/
+.ledgerstatement-filter-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.ledgerstatement-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.ledgerstatement-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+/* Inputs */
+.ledgerstatement-select,
+.ledgerstatement-date-input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.ledgerstatement-select:focus,
+.ledgerstatement-date-input:focus {
+  border-color: var(--primary);
+}
+
+/* View Button */
+.ledgerstatement-view-btn {
+  background: var(--primary);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  height: 38px;
+  transition: background 0.2s ease;
+}
+
+.ledgerstatement-view-btn:hover {
+  background: var(--primary-dark);
+}
+
+/* -----------------------------------------
+   SUMMARY CARD
+------------------------------------------*/
+.ledgerstatement-summary-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  width: fit-content;
+}
+
+.ledgerstatement-summary-title {
+  font-size: 0.85rem;
+  color: #718096;
+  font-weight: 500;
+}
+
+.ledgerstatement-summary-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-top: 0.3rem;
+}
+
+/* -----------------------------------------
+   TABLE CARD
+------------------------------------------*/
+.ledgerstatement-table-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.ledgerstatement-table-wrapper {
+  overflow-x: auto;
+}
+
+/* -----------------------------------------
+   TABLE (MATCHES DAY BOOK EXACTLY)
+------------------------------------------*/
+.ledgerstatement-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Header */
+.ledgerstatement-table th {
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  background: #f8f9fc;
+  border-bottom: 2px solid #edf2f7;
+  padding: 0.6rem 0.75rem;
+  white-space: nowrap;
+}
+
+.ledgerstatement-table th:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+
+.ledgerstatement-table th:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
+
+/* Cells */
+.ledgerstatement-table td {
+  padding: 0.7rem 0.75rem;
+  font-size: 0.875rem;
+  color: #666a6d;
+  border-bottom: 1px solid #edf2f7;
+  background: #ffffff;
+  transition: background 0.2s ease;
+}
+
+/* Hover */
+.ledgerstatement-table tbody tr:hover td {
+  background: #f7fafc;
+}

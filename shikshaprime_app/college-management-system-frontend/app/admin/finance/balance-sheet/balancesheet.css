@@ -1,0 +1,73 @@
+.bs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Filter */
+.bs-filter-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.bs-date-input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.bs-view-btn {
+  background: var(--primary);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: none;
+}
+
+/* Table */
+.bs-table-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.bs-title {
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+}
+
+.bs-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.bs-table th,
+.bs-table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.bs-col-ledger {
+  width: 70%;
+  text-align: left;
+}
+
+.bs-col-amount {
+  width: 30%;
+  text-align: right;
+  font-weight: 600;
+}
+
+.bs-table tbody tr:hover td {
+  background: #f7fafc;
+}

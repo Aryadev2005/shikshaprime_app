@@ -1,0 +1,54 @@
+.teacher-exams-page {
+  width: 100%;
+}
+
+.teacher-exams-container {
+  width: 100%;
+  padding: 20px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.exam-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.exam-card {
+  border: 1px solid #dcdcdc;
+  padding: 16px;
+  border-radius: 8px;
+  background: #fff;
+  transition: 0.2s ease;
+}
+
+.exam-card:hover {
+  background: #f8f8f8;
+}
+
+.exam-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.exam-subject {
+  font-size: 14px;
+  color: #555;
+}
+
+.exam-progress {
+  font-size: 12px;
+  color: #777;
+  margin-top: 4px;
+}
+
+.page-loader {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}

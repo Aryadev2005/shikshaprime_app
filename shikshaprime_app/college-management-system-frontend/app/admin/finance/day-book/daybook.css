@@ -1,0 +1,141 @@
+/* -----------------------------------------
+   DAY BOOK — CUSTOM STYLES
+   Matches your global.css design system
+------------------------------------------*/
+
+/* Page Container */
+.daybook-container {
+  padding: 0;
+}
+
+/* Page Title */
+.daybook-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+}
+
+.daybook-table .debit_amount td {
+  background-color: #e943b230;
+}
+
+.daybook-table .credit_amount td {
+  background-color: #10c37c1f;
+}
+.daybook-table tr {
+  border-bottom: 2px solid #ffffff;
+}
+/* Filter Card */
+.daybook-filter-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Date Input */
+.daybook-date-input {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.daybook-date-input:focus {
+  border-color: var(--primary);
+}
+
+/* Summary Grid */
+.daybook-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Summary Card */
+
+
+
+/* Table Card */
+.daybook-table-card {
+  background: #ffffffb2;
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  /* padding: 1rem 1.2rem; */
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Table Wrapper */
+.daybook-table-wrapper {
+  overflow-x: auto;
+}
+
+/* Table */
+.daybook-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.daybook-table th {
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  background: #f8f9fc;
+  border-bottom: 2px solid #edf2f7;
+  padding: 0.6rem 0.75rem;
+  white-space: nowrap;
+}
+
+.daybook-table th:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+
+.daybook-table th:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
+
+.daybook-table td {
+  padding: 0.7rem 0.75rem;
+  font-size: 0.875rem;
+  color: #2e2e2e;
+  border-bottom: 1px solid #ffffff;
+  background: #ffffff;
+  transition: background 0.2s ease;
+}
+
+.daybook-table tbody tr:hover td {
+  background: #f7fafc;
+}
+
+/* Empty State */
+.daybook-empty {
+  text-align: center;
+  padding: 1.5rem;
+  color: #718096;
+  font-size: 0.9rem;
+}
+
+/* Debit & Credit Colors */
+.daybook-debit {
+  color: #16a34a; /* green */
+  font-weight: 600;
+}
+
+.daybook-credit {
+  color: #dc2626; /* red */
+  font-weight: 600;
+}

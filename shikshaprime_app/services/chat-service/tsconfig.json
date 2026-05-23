@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "lib": ["ES2020"],
+    "outDir": "dist",
+    "rootDir": "src",
+    "strict": false,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "incremental": true,
+    "types": ["node"]
+  },
+  "scripts": { 
+    "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --transpile-only src/server.ts", 
+    "build": "tsc -p tsconfig.json",
+    "start": "cross-env NODE_ENV=production node dist/server.js" 
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

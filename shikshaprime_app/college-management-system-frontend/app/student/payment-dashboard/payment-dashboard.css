@@ -1,0 +1,208 @@
+.student-pay-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.spd-page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.spd-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.spd-stat-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.spd-stat-card .spd-stat-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.spd-stat-card.total .spd-stat-icon {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.spd-stat-card.paid .spd-stat-icon {
+    background: #ecfdf3;
+    color: #16a34a;
+}
+
+.spd-stat-card.pending .spd-stat-icon {
+    background: #fefce8;
+    color: #ca8a04;
+}
+
+.spd-stat-card.overdue .spd-stat-icon {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.spd-stat-label {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.spd-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    display: block;
+}
+
+.spd-stat-count {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.spd-filter-bar {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.spd-filter button {
+    margin-right: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: var(--text-dark);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.spd-filter button.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.spd-table-wrapper {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.spd-type {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.spd-type-name {
+    font-weight: 600;
+}
+
+.spd-student {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.spd-badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.badge-paid {
+    background: #ecfdf3;
+    color: #15803d;
+}
+
+.badge-pending {
+    background: #fefce8;
+    color: #854d0e;
+}
+
+.badge-overdue {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.badge-partial {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.spd-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.pay-btn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.pay-btn:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.receipt-btn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #111827;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.spd-skeleton {
+    padding: 16px;
+}
+
+.spd-skeleton-row {
+    display: grid;
+    grid-template-columns: 40px 140px 100px 100px 140px 90px 90px 110px;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.spd-skeleton-cell {
+    height: 14px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    animation: spd-pulse 1.4s ease infinite;
+}
+
+@keyframes spd-pulse {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 100% 50%;
+    }
+}

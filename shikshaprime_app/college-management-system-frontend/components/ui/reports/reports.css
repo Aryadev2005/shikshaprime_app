@@ -1,0 +1,213 @@
+/* ============================================================
+   PAGE BACKGROUND
+   ============================================================ */
+.report-page {
+  min-height: 100vh;
+}
+
+/* ============================================================
+   MAIN CONTAINER
+   ============================================================ */
+.report-container {
+  /* width: 100%;
+  max-width: 1300px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08); */
+}
+
+/* ============================================================
+   TITLE
+   ============================================================ */
+.report-title {
+  /* font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #222; */
+}
+
+/* ============================================================
+   FILTERS
+   ============================================================ */
+.report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.report-filters.headwise-collection-filters {
+  justify-content: space-between;
+
+}
+
+.report-filters.headwise-collection-filters .filter-range {
+  display: flex;
+  flex-direction: row;
+  gap: 0.2rem;
+  flex: 0 0 25%;
+  max-width: 25%;
+}
+
+.report-filters.headwise-collection-filters>div {
+  /* flex: 0 0 calc((100% / 6) - 15px); */
+  /* max-width: calc((100% / 6) - 15px); */
+}
+
+.report-filters.outstanding-dues-filters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.report-filters.headwise-collection-filters {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+}
+
+.report-filters.headwise-collection-filters .filter-range {
+  display: contents;
+}
+
+.filter-label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.filter-input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  background: #fff;
+  color: #222;
+  font-size: 15px;
+}
+
+/* ============================================================
+   TABLE WRAPPER
+   ============================================================ */
+.report-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+/* ============================================================
+   TABLE BASE (Finance Style)
+   ============================================================ */
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  background: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+/* ============================================================
+   TABLE HEADER
+   ============================================================ */
+.report-table thead tr {
+  background: #f3f4f6;
+}
+
+.report-table th {
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #333;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: normal;
+}
+
+/* ============================================================
+   TABLE BODY
+   ============================================================ */
+.report-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s ease;
+}
+
+.report-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.report-table td {
+  padding: 12px 16px;
+  color: #444;
+  vertical-align: middle;
+  white-space: normal;
+  word-break: break-all;
+  /* 🔥 prevents horizontal scroll */
+  max-width: 220px;
+}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.no-data,
+.report-table-empty {
+  text-align: center;
+  padding: 20px;
+  color: #777;
+  font-size: 14px;
+}
+
+/* ============================================================
+   RESPONSIVE TABLE (Mobile)
+   ============================================================ */
+@media (max-width: 768px) {
+  .report-container {
+    padding: 20px;
+  }
+
+  .report-title {
+    font-size: 22px;
+  }
+
+  .filter-input {
+    width: 100%;
+  }
+
+  .report-filters.headwise-collection-filters,
+  .report-filters.outstanding-dues-filters {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .report-table thead {
+    display: none;
+  }
+
+  .report-table tbody tr {
+    display: block;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    background: #fff;
+    padding: 10px;
+  }
+
+  .report-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  .report-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+  }
+}
