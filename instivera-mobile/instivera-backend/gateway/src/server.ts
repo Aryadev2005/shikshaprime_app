@@ -9,7 +9,7 @@ const server = app.listen(config.port, () => {
   logger.info(
     {
       port: config.port,
-      environment: config.nodeEnv,
+      environment: config.env,
     },
     'INSTIVERA Gateway started successfully',
   );

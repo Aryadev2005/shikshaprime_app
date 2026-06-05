@@ -4,12 +4,12 @@ import { logger } from './logger';
 
 // Create ZeptoMail transporter
 const transporter = nodemailer.createTransport({
-  host: config.email.host,
-  port: config.email.port,
+  host: config.smtp.host,
+  port: config.smtp.port,
   secure: false,
   auth: {
-    user: config.email.user,
-    pass: config.email.pass,
+    user: config.smtp.username,
+    pass: config.smtp.password,
   },
 });
 
@@ -25,13 +25,13 @@ export async function sendOtpEmail(
   name: string = 'User'
 ): Promise<boolean> {
   try {
-    if (!config.email.pass) {
+    if (!config.smtp.password) {
       logger.warn(`📧 DEV MODE: OTP for ${email} = ${otp}`);
       return false;
     }
 
     await transporter.sendMail({
-      from: config.email.from,
+      from: config.emailFrom,
       to: email,
       subject: 'Your OTP for Instivera Login',
       html: `

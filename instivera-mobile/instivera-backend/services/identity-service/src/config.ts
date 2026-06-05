@@ -6,16 +6,16 @@ export const env = process.env.NODE_ENV || 'development';
 const envFile = path.resolve(process.cwd(), `.env.${env}`);
 if (fs.existsSync(envFile)) {
   dotenv.config({ path: envFile });
+  console.log(`[identity-service] Loaded ${envFile}`);
 } else {
   dotenv.config();
 }
 
-console.log('NODE_ENV=', process.env.NODE_ENV);
-console.log('Using DB_HOST=', process.env.DB_HOST, 'DB_NAME=', process.env.DB_NAME);
+console.log('[identity-service] DB_HOST=', process.env.DB_HOST);
 
 export const config = {
   env,
-  port: process.env.SERVICE_PORT || 9050,
+  port: parseInt(process.env.SERVICE_PORT || '9050', 10),
   node_env: env,
   db: {
     host: process.env.DB_HOST!,
@@ -24,17 +24,15 @@ export const config = {
     pass: process.env.DB_PASSWORD!,
     name: process.env.DB_NAME!,
   },
-  jwt: {
-    secret: process.env.JWT_SECRET || 'mivdjh32hjfdgppkmdu8',
-    expiresIn: process.env.JWT_EXPIRES_IN || '60d',
+  jwt_secret: process.env.JWT_SECRET || 'mivdjh32hjfdgppkmdu8',
+  jwt_expires_in: process.env.JWT_EXPIRES_IN || '60d',
+  smtp: {
+    host: process.env.SMTP_HOST || 'smtp.zeptomail.in',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    username: process.env.SMTP_USERNAME || 'emailapikey',
+    password: process.env.SMTP_PASSWORD || '',
   },
-  email: {
-    host: process.env.EMAIL_HOST || 'smtp.zeptomail.in',
-    port: Number(process.env.EMAIL_PORT) || 587,
-    user: process.env.EMAIL_USER || 'emailapikey',
-    pass: process.env.EMAIL_PASS || '',
-    from: process.env.EMAIL_FROM || 'noreply@instivera.com',
-  },
+  emailFrom: process.env.EMAIL_FROM || 'noreply@instivera.com',
 };
 
 export default config;

@@ -29,6 +29,10 @@ const createClients = () => ({
     name: 'FeesService',
     baseURL: config.feesServiceUrl,
   }),
+  noticeClient: createApiClient({
+    name: 'NoticeService',
+    baseURL: config.noticeServiceUrl,
+  }),
 });
 
 const clients = createClients();
@@ -40,4 +44,5 @@ export const {
   teacherClient,
   chatClient,
   feesClient,
+  noticeClient,
 } = clients;

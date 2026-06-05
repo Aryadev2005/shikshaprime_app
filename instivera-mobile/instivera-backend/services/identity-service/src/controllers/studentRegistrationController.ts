@@ -146,7 +146,7 @@ export const registerStudent = async (
     const seq = getTenantSequelize(tenant(req));
     const regId = generateRegId();
 
-    const [result] = await seq.query<{ id: number }>(
+    const insertResult = await seq.query(
       `INSERT INTO student_registrations (
         registration_id, mode,
         first_name, last_name, gender, date_of_birth,
@@ -167,7 +167,7 @@ export const registerStudent = async (
         :previous_school_name, :last_class_passed,
         :board_university_10th, :ten_percentage, :year_of_passing_10th,
         'SUBMITTED'
-      ) RETURNING id`,
+      )`,
       {
         replacements: {
           registration_id: regId,
@@ -197,9 +197,9 @@ export const registerStudent = async (
         },
         type: QueryTypes.INSERT,
       },
-    );
+    ) as unknown as [number, number];
 
-    const insertedId = Array.isArray(result) ? (result[0] as { id: number })?.id : result;
+    const insertedId = insertResult[0];
 
     res.status(201).json({
       status: 1,

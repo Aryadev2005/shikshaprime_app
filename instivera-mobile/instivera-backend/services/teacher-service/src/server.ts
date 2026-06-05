@@ -33,7 +33,7 @@ app.get('/health', (_req: any, res: any) => {
 app.get('/db-check', async (_req: any, res: any) => {
     try {
         await globalSequelize.authenticate();
-        res.json({ status: 1, message: 'Connected to ShikshaPrime MySQL successfully', host: config.db.host, database: config.db.database });
+        res.json({ status: 1, message: 'Connected to ShikshaPrime MySQL successfully', host: config.db.host, database: config.db.name });
     } catch (err: any) {
         res.status(500).json({ status: 0, message: 'Database connection failed', error: err.message });
     }

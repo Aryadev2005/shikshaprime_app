@@ -1,27 +1,27 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import fs from 'fs';
 
-interface Config {
-  port: number;
-  db: { host: string; username: string; password: string; database: string };
-  jwtSecret: string;
-  phonepe: {
-    merchantId: string;
-    saltKey: string;
-    saltIndex: string;
-    baseUrl: string;
-  };
+const env = process.env.NODE_ENV || 'development';
+const envFile = path.resolve(process.cwd(), `.env.${env}`);
+if (fs.existsSync(envFile)) {
+  dotenv.config({ path: envFile });
+  console.log(`[payment-service] Loaded ${envFile}`);
+} else {
+  dotenv.config();
 }
 
-const config: Config = {
-  port: parseInt(process.env.PORT || '9053', 10),
+const config = {
+  env,
+  port: parseInt(process.env.SERVICE_PORT || '9053', 10),
   db: {
-    host: process.env.DB_HOST || 'localhost',
-    username: process.env.DB_USERNAME || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'shikshaprime_main',
+    host: process.env.DB_HOST!,
+    port: process.env.DB_PORT!,
+    user: process.env.DB_USERNAME!,
+    pass: process.env.DB_PASSWORD!,
+    name: process.env.DB_NAME!,
   },
-  jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret',
+  jwt_secret: process.env.JWT_SECRET || 'mivdjh32hjfdgppkmdu8',
   phonepe: {
     merchantId: process.env.PHONEPE_MERCHANT_ID || '',
     saltKey: process.env.PHONEPE_SALT_KEY || '',
@@ -31,5 +31,4 @@ const config: Config = {
 };
 
 export default config;
-// Named export so old scaffold references (config.PORT etc.) compile
 export { config };

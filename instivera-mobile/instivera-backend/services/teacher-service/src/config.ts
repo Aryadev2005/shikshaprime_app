@@ -1,27 +1,28 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 
-dotenv.config();
-
-interface Config {
-  port: number;
-  db: {
-    host: string;
-    username: string;
-    password: string;
-    database: string;
-  };
-  jwtSecret: string;
+const env = process.env.NODE_ENV || 'development';
+const envFile = path.resolve(process.cwd(), `.env.${env}`);
+if (fs.existsSync(envFile)) {
+  dotenv.config({ path: envFile });
+  console.log(`[teacher-service] Loaded ${envFile}`);
+} else {
+  dotenv.config();
 }
 
-const config: Config = {
-  port: parseInt(process.env.PORT || '9060', 10),
+const config = {
+  env,
+  port: parseInt(process.env.SERVICE_PORT || '9060', 10),
   db: {
-    host: process.env.DB_HOST || 'localhost',
-    username: process.env.DB_USERNAME || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'shikshaprime_main',
+    host: process.env.DB_HOST!,
+    port: process.env.DB_PORT!,
+    user: process.env.DB_USERNAME!,
+    pass: process.env.DB_PASSWORD!,
+    name: process.env.DB_NAME!,
   },
-  jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret',
+  jwt_secret: process.env.JWT_SECRET || 'mivdjh32hjfdgppkmdu8',
+  identityServiceUrl: process.env.IDENTITY_SERVICE_URL || 'http://localhost:9050',
 };
 
 export default config;

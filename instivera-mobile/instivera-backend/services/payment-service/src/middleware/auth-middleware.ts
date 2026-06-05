@@ -19,7 +19,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     return res.status(401).json({ status: 0, data: null, message: 'No token provided' });
   }
   try {
-    req.user = jwt.verify(token, config.jwtSecret) as any;
+    req.user = jwt.verify(token, config.jwt_secret) as any;
     req.token = token;
     next();
   } catch {
