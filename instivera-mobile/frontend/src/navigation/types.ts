@@ -10,6 +10,7 @@ export type AttendanceStackParamList = {
     date: string;
     classId: string;
   };
+  StudentHub: { studentId: string; studentName: string; roll: string };
 };
 
 export type AssignmentsStackParamList = {
@@ -21,6 +22,15 @@ export type AssignmentsStackParamList = {
 export type FeesStackParamList = {
   Fees: undefined;
   PaymentWebView: { redirectUrl: string; paymentId: string; amount: number };
+};
+
+export type ChatStackParamList = {
+  Conversations: undefined;
+  ChatRoom: { conversationId: number; name: string };
+};
+
+export type CalendarStackParamList = {
+  Calendar: undefined;
 };
 
 /** @deprecated use AttendanceStackParamList */

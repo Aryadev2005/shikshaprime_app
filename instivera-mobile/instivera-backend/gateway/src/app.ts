@@ -26,7 +26,7 @@ export const createApp = (): Express => {
   app.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({
       status: 1,
-      data: { service: 'instivera-mobile-bff', version: '1.0.0' },
+      data: { service: 'instivera-gateway', version: '1.0.0' },
       message: 'OK',
     });
   });

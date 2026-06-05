@@ -20,20 +20,32 @@ import { AttendanceReviewScreen } from '../screens/attendance/AttendanceReviewSc
 import { AssignmentsScreen } from '../screens/assignments/AssignmentsScreen';
 import { AssignmentDetailScreen } from '../screens/assignments/AssignmentDetailScreen';
 import { CreateAssignmentScreen } from '../screens/assignments/CreateAssignmentScreen';
-import { AttendanceStackParamList, AssignmentsStackParamList, FeesStackParamList } from './types';
 import { FeesScreen } from '../screens/fees/FeesScreen';
 import { PaymentWebViewScreen } from '../screens/fees/PaymentWebViewScreen';
+import { CalendarScreen } from '../screens/calendar/CalendarScreen';
+import { StudentHubScreen } from '../screens/students/StudentHubScreen';
+import { ChatConversationsScreen } from '../screens/chat/ChatConversationsScreen';
+import { ChatRoomScreen } from '../screens/chat/ChatRoomScreen';
+import {
+  AttendanceStackParamList,
+  AssignmentsStackParamList,
+  FeesStackParamList,
+  ChatStackParamList,
+  CalendarStackParamList,
+} from './types';
 
-// ─── Stacks ──────────────────────────────────────────────────────────────────
+// ─── Stack navigators ─────────────────────────────────────────────────────────
 
 const AttendanceStack = createNativeStackNavigator<AttendanceStackParamList>();
 const AssignmentsStack = createNativeStackNavigator<AssignmentsStackParamList>();
 const FeesStack = createNativeStackNavigator<FeesStackParamList>();
+const ChatStack = createNativeStackNavigator<ChatStackParamList>();
+const CalendarStack = createNativeStackNavigator<CalendarStackParamList>();
 
 type RootStackParamList = { Auth: undefined };
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── JWT helper ───────────────────────────────────────────────────────────────
 
 const decodeJwtRole = (token: string): string | null => {
   try {
@@ -44,7 +56,7 @@ const decodeJwtRole = (token: string): string | null => {
   }
 };
 
-// ─── Teacher class-selector screen (inline, no separate file) ────────────────
+// ─── Teacher home screen (inline) ────────────────────────────────────────────
 
 const TeacherHomeScreen: React.FC<{
   navigation: { navigate: (screen: keyof AttendanceStackParamList, params: object) => void };
@@ -112,7 +124,7 @@ const homeStyles = StyleSheet.create({
   btnText: { fontSize: 16, fontWeight: '700', color: TOKENS.paper },
 });
 
-// ─── Nested stacks ───────────────────────────────────────────────────────────
+// ─── Nested stacks ────────────────────────────────────────────────────────────
 
 const AttendanceStackScreen: React.FC<{ role: string | null }> = ({ role }) => (
   <AttendanceStack.Navigator screenOptions={{ headerShown: false }}>
@@ -126,6 +138,7 @@ const AttendanceStackScreen: React.FC<{ role: string | null }> = ({ role }) => (
         />
         <AttendanceStack.Screen name="AttendanceTaker" component={AttendanceTakerScreen} />
         <AttendanceStack.Screen name="AttendanceReview" component={AttendanceReviewScreen} />
+        <AttendanceStack.Screen name="StudentHub" component={StudentHubScreen} />
       </>
     )}
   </AttendanceStack.Navigator>
@@ -146,20 +159,47 @@ const FeesStackScreen: React.FC = () => (
   </FeesStack.Navigator>
 );
 
-// ─── Bottom tab navigator ────────────────────────────────────────────────────
+const ChatStackScreen: React.FC = () => (
+  <ChatStack.Navigator screenOptions={{ headerShown: false }}>
+    <ChatStack.Screen name="Conversations" component={ChatConversationsScreen} />
+    <ChatStack.Screen name="ChatRoom" component={ChatRoomScreen} />
+  </ChatStack.Navigator>
+);
+
+const CalendarStackScreen: React.FC = () => (
+  <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
+    <CalendarStack.Screen name="Calendar" component={CalendarScreen} />
+  </CalendarStack.Navigator>
+);
+
+// ─── Bottom tab navigator ─────────────────────────────────────────────────────
 
 type TabParamList = {
   Attendance: undefined;
   Assignments: undefined;
   Fees: undefined;
+  Chat: undefined;
+  Calendar: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const TAB_ICONS: Record<string, React.ComponentProps<typeof MaterialCommunityIcons>['name']> = {
-  Attendance: 'calendar-check-outline',
-  Assignments: 'clipboard-text-outline',
-  Fees: 'wallet-outline',
+type TabIconMap = Record<string, React.ComponentProps<typeof MaterialCommunityIcons>['name']>;
+
+const TAB_ICONS_INACTIVE: TabIconMap = {
+  Attendance: 'clipboard-check-outline',
+  Assignments: 'book-open-outline',
+  Fees: 'credit-card-outline',
+  Chat: 'chat-outline',
+  Calendar: 'calendar-month-outline',
+};
+
+const TAB_ICONS_ACTIVE: TabIconMap = {
+  Attendance: 'clipboard-check',
+  Assignments: 'book-open-variant',
+  Fees: 'credit-card',
+  Chat: 'chat',
+  Calendar: 'calendar-month',
 };
 
 const MainTabs: React.FC<{ token: string }> = ({ token }) => {
@@ -172,27 +212,49 @@ const MainTabs: React.FC<{ token: string }> = ({ token }) => {
         tabBarActiveTintColor: TOKENS.plum,
         tabBarInactiveTintColor: TOKENS.ink3,
         tabBarStyle: {
-          backgroundColor: TOKENS.paper,
+          backgroundColor: '#fff',
           borderTopColor: TOKENS.line,
           borderTopWidth: 1,
+          height: 65,
           paddingBottom: 8,
-          height: 60,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
-        tabBarIcon: ({ color, size }) => (
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarIcon: ({ color, focused }) => (
           <MaterialCommunityIcons
-            name={TAB_ICONS[route.name] ?? 'circle-outline'}
-            size={size}
+            name={
+              focused
+                ? TAB_ICONS_ACTIVE[route.name] ?? 'circle'
+                : TAB_ICONS_INACTIVE[route.name] ?? 'circle-outline'
+            }
+            size={24}
             color={color}
           />
         ),
       })}
     >
-      <Tab.Screen name="Attendance">
+      <Tab.Screen name="Attendance" options={{ title: 'Attendance' }}>
         {() => <AttendanceStackScreen role={role} />}
       </Tab.Screen>
-      <Tab.Screen name="Assignments" component={AssignmentsStackScreen} />
-      <Tab.Screen name="Fees" component={FeesStackScreen} />
+      <Tab.Screen
+        name="Assignments"
+        component={AssignmentsStackScreen}
+        options={{ title: 'Assignments' }}
+      />
+      <Tab.Screen
+        name="Fees"
+        component={FeesStackScreen}
+        options={{ title: 'Fees' }}
+      />
+      <Tab.Screen
+        name="Chat"
+        component={ChatStackScreen}
+        options={{ title: 'Chat' }}
+      />
+      <Tab.Screen
+        name="Calendar"
+        component={CalendarStackScreen}
+        options={{ title: 'Calendar' }}
+      />
     </Tab.Navigator>
   );
 };

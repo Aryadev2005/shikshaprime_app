@@ -14,6 +14,7 @@ export interface Assignment {
   progress: number;
   grade?: string;
   type?: string;
+  teacherName?: string;
 }
 
 export interface AssignmentListResponse {

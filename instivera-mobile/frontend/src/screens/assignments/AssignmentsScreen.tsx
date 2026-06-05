@@ -5,111 +5,165 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
   StyleSheet,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TOKENS } from '../../theme/tokens';
 import { useAssignmentList } from '../../hooks/useAssignments';
 import { Assignment } from '../../types/assignment';
 import { AssignmentsStackParamList } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
+import { Avatar, Pill, Bar } from '../../components/ui';
 
 type Props = NativeStackScreenProps<AssignmentsStackParamList, 'AssignmentsList'>;
-
 type FilterKey = 'all' | 'PENDING' | 'SUBMITTED' | 'GRADED';
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: TOKENS.amber,
-  SUBMITTED: TOKENS.blue,
-  GRADED: TOKENS.green,
-  OVERDUE: TOKENS.red,
-};
-
-const filterLabels: { key: FilterKey; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'PENDING', label: 'Pending' },
-  { key: 'SUBMITTED', label: 'Submitted' },
-  { key: 'GRADED', label: 'Graded' },
-];
-
-const dueTomorrowLabel = (dueDate: string): boolean => {
+const isDueTomorrow = (dueDate: string): boolean => {
   const today = new Date();
   const due = new Date(dueDate);
   const diff = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   return diff === 1;
 };
 
+const relativeLabel = (dueDate: string): string => {
+  try {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diff = Math.round((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return 'Overdue';
+    if (diff === 0) return 'Due today';
+    if (diff === 1) return 'In 1 day';
+    if (diff < 7) return `In ${diff} days`;
+    if (diff < 14) return 'In 1 week';
+    return due.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  } catch {
+    return dueDate;
+  }
+};
+
+// ─── Featured card ────────────────────────────────────────────────────────────
+
 const FeaturedCard: React.FC<{ assignment: Assignment; onPress: () => void }> = ({
   assignment,
   onPress,
 }) => (
-  <TouchableOpacity style={styles.featuredCard} onPress={onPress} activeOpacity={0.85}>
-    <View style={styles.featuredGlow} />
-    <View style={styles.featuredBadge}>
-      <MaterialCommunityIcons name="clock-alert-outline" size={12} color={TOKENS.coral} />
-      <Text style={styles.featuredBadgeText}>Due Tomorrow</Text>
-    </View>
-    <Text style={styles.featuredTitle} numberOfLines={2}>
-      {assignment.title}
-    </Text>
-    <Text style={styles.featuredSubject}>{assignment.subjectName}</Text>
-    <View style={styles.featuredProgressRow}>
-      <View style={styles.featuredProgressTrack}>
-        <View
-          style={[styles.featuredProgressFill, { width: `${assignment.progress}%` }]}
-        />
+  <TouchableOpacity activeOpacity={0.88} onPress={onPress}>
+    <LinearGradient
+      colors={[TOKENS.plumDeep, TOKENS.plum, TOKENS.plum700]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.featured}
+    >
+      {/* Glow blob */}
+      <View style={styles.featuredGlow} pointerEvents="none" />
+
+      <View style={styles.featuredBadgeRow}>
+        <View style={styles.featuredDueBadge}>
+          <View style={styles.featuredDueDot} />
+          <Text style={styles.featuredDueBadgeText}>DUE TOMORROW</Text>
+        </View>
+        <Text style={styles.featuredSubBadge}>{assignment.subjectName?.toUpperCase()}</Text>
       </View>
-      <Text style={styles.featuredProgressLabel}>{assignment.progress}%</Text>
-    </View>
+
+      <Text style={styles.featuredTitle} numberOfLines={2}>
+        {assignment.title}
+      </Text>
+      <Text style={styles.featuredDesc}>Submit as PDF · {assignment.progress}% done</Text>
+
+      <View style={styles.featuredFooter}>
+        <View style={styles.featuredTeacher}>
+          <Avatar name={assignment.teacherName ?? 'Teacher'} size={26} />
+          <View>
+            <Text style={styles.featuredTeacherName}>
+              {assignment.teacherName ?? 'Teacher'}
+            </Text>
+            <Text style={styles.featuredTeacherSub}>
+              {relativeLabel(assignment.dueDate)}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.featuredStartBtn}>
+          <Text style={styles.featuredStartText}>Start</Text>
+          <MaterialCommunityIcons name="arrow-right" size={13} color="#fff" />
+        </View>
+      </View>
+    </LinearGradient>
   </TouchableOpacity>
 );
 
-const AssignmentRow: React.FC<{
-  item: Assignment;
-  onPress: () => void;
-}> = ({ item, onPress }) => {
-  const statusColor = STATUS_COLORS[item.status] ?? TOKENS.ink3;
+// ─── Assignment row ───────────────────────────────────────────────────────────
+
+type AsgnStatus = 'pending' | 'draft' | 'done' | 'PENDING' | 'SUBMITTED' | 'GRADED' | 'OVERDUE';
+
+const getRowConfig = (status: string) => {
+  const s = status?.toLowerCase();
+  if (s === 'graded') return { iconBg: TOKENS.greenTint, iconColor: TOKENS.green, icon: 'check' };
+  if (s === 'submitted') return { iconBg: TOKENS.plumTint, iconColor: TOKENS.plum, icon: 'send' };
+  if (s === 'overdue') return { iconBg: TOKENS.redTint, iconColor: TOKENS.red, icon: 'alert-circle-outline' };
+  return { iconBg: TOKENS.plumTint, iconColor: TOKENS.plum, icon: 'file-document-outline' };
+};
+
+const AsgnRow: React.FC<{ item: Assignment; onPress: () => void }> = ({ item, onPress }) => {
+  const cfg = getRowConfig(item.status);
   const isGraded = item.status === 'GRADED';
+  const isOverdue = item.status === 'OVERDUE';
+  const due = relativeLabel(item.dueDate);
 
   return (
-    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.rowAccent, { backgroundColor: statusColor }]} />
-      <View style={styles.rowBody}>
-        <View style={styles.rowHeader}>
-          <Text style={styles.rowTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-          {isGraded && item.grade ? (
-            <View style={styles.gradePill}>
-              <Text style={styles.gradePillText}>{item.grade}</Text>
-            </View>
-          ) : (
-            <Text style={[styles.rowStatus, { color: statusColor }]}>{item.status}</Text>
-          )}
-        </View>
-        <Text style={styles.rowSubject}>{item.subjectName}</Text>
-        <View style={styles.rowFooter}>
-          <MaterialCommunityIcons name="calendar-outline" size={12} color={TOKENS.ink4} />
-          <Text style={styles.rowDue}>
-            {new Date(item.dueDate).toLocaleDateString('en-IN', {
-              day: 'numeric',
-              month: 'short',
-            })}
-          </Text>
-          {!isGraded && (
-            <View style={styles.progressBarSmall}>
-              <View
-                style={[styles.progressBarFill, { width: `${item.progress}%` }]}
-              />
-            </View>
-          )}
-        </View>
+    <TouchableOpacity style={styles.asgnRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.asgnIcon, { backgroundColor: cfg.iconBg }]}>
+        <MaterialCommunityIcons name={cfg.icon as any} size={17} color={cfg.iconColor} />
       </View>
-      <MaterialCommunityIcons name="chevron-right" size={20} color={TOKENS.ink4} />
+      <View style={styles.asgnBody}>
+        <View style={styles.asgnTop}>
+          <Text style={styles.asgnSubject}>{item.subjectName?.toUpperCase()}</Text>
+          <Text
+            style={[
+              styles.asgnDue,
+              isGraded && { color: TOKENS.green },
+              isOverdue && { color: TOKENS.red },
+            ]}
+          >
+            {isGraded ? 'Submitted' : due}
+          </Text>
+        </View>
+        <Text style={styles.asgnTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        {isGraded ? (
+          <View style={styles.asgnGradeRow}>
+            {item.grade ? (
+              <Pill tone="green" dot>
+                Graded · {item.grade}/100
+              </Pill>
+            ) : null}
+            <Text style={styles.asgnFeedback}>Feedback ready</Text>
+          </View>
+        ) : (
+          <View style={styles.asgnProgressRow}>
+            <View style={styles.asgnBarWrap}>
+              <Bar value={item.progress ?? 0} tone={isOverdue ? 'coral' : 'plum'} height={4} />
+            </View>
+            <Text style={styles.asgnProgressPct}>{item.progress ?? 0}%</Text>
+          </View>
+        )}
+      </View>
     </TouchableOpacity>
   );
 };
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
+
+const FILTER_CHIPS: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'PENDING', label: 'Pending' },
+  { key: 'SUBMITTED', label: 'Submitted' },
+  { key: 'GRADED', label: 'Graded' },
+];
 
 export const AssignmentsScreen: React.FC<Props> = ({ navigation }) => {
   const [filter, setFilter] = useState<FilterKey>('all');
@@ -125,11 +179,12 @@ export const AssignmentsScreen: React.FC<Props> = ({ navigation }) => {
     }
   })();
 
-  const assignments = data?.assignments ?? [];
+  const assignments: Assignment[] = data?.assignments ?? [];
+  const counters = data?.counters;
 
-  const featured = assignments.find(
-    (a) => a.status === 'PENDING' && dueTomorrowLabel(a.dueDate),
-  );
+  const featured = !isTeacher
+    ? assignments.find((a) => a.status === 'PENDING' && isDueTomorrow(a.dueDate))
+    : undefined;
 
   const filtered =
     filter === 'all' ? assignments : assignments.filter((a) => a.status === filter);
@@ -154,83 +209,108 @@ export const AssignmentsScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Assignments</Text>
-        {isTeacher && (
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => navigation.navigate('CreateAssignment')}
-          >
-            <MaterialCommunityIcons name="plus" size={22} color={TOKENS.paper} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Counters (student only) */}
-      {data?.counters && (
-        <View style={styles.counters}>
-          {[
-            { label: 'Total', value: data.counters.total, color: TOKENS.ink },
-            { label: 'Pending', value: data.counters.pending, color: TOKENS.amber },
-            { label: 'Submitted', value: data.counters.submitted, color: TOKENS.blue },
-            { label: 'Graded', value: data.counters.graded, color: TOKENS.green },
-          ].map((c) => (
-            <View key={c.label} style={styles.counterItem}>
-              <Text style={[styles.counterValue, { color: c.color }]}>{c.value}</Text>
-              <Text style={styles.counterLabel}>{c.label}</Text>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScrollView showsVerticalScrollIndicator={false} stickyHeaderIndices={[0]}>
+        {/* Header area */}
+        <View style={styles.headerArea}>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.headerSuper}>Your work</Text>
+              <Text style={styles.headerTitle}>Assignments</Text>
             </View>
-          ))}
-        </View>
-      )}
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Featured card */}
-        {featured && !isTeacher && (
-          <FeaturedCard
-            assignment={featured}
-            onPress={() => navigation.navigate('AssignmentDetail', { id: featured.id })}
-          />
-        )}
-
-        {/* Filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filtersRow}
-          contentContainerStyle={styles.filtersContent}
-        >
-          {filterLabels.map(({ key, label }) => (
-            <TouchableOpacity
-              key={key}
-              style={[styles.chip, filter === key && styles.chipActive]}
-              onPress={() => setFilter(key)}
-            >
-              <Text style={[styles.chipText, filter === key && styles.chipTextActive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* List */}
-        {filtered.length === 0 ? (
-          <View style={styles.emptyState}>
-            <MaterialCommunityIcons name="clipboard-check-outline" size={48} color={TOKENS.line} />
-            <Text style={styles.emptyText}>No assignments here</Text>
+            {isTeacher && (
+              <TouchableOpacity
+                style={styles.addFAB}
+                onPress={() => navigation.navigate('CreateAssignment')}
+              >
+                <MaterialCommunityIcons name="plus" size={20} color="#fff" />
+              </TouchableOpacity>
+            )}
           </View>
-        ) : (
-          filtered.map((item) => (
-            <AssignmentRow
-              key={item.id}
-              item={item}
-              onPress={() => navigation.navigate('AssignmentDetail', { id: item.id })}
+
+          {/* Search bar */}
+          <View style={styles.searchBar}>
+            <MaterialCommunityIcons name="magnify" size={17} color={TOKENS.ink3} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search assignments…"
+              placeholderTextColor={TOKENS.ink3}
+              editable={false}
             />
-          ))
+            <MaterialCommunityIcons name="sort-variant" size={17} color={TOKENS.ink3} />
+          </View>
+
+          {/* Filter chips */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={styles.chipsContent}>
+            {FILTER_CHIPS.map(({ key, label }) => {
+              const count =
+                key === 'all'
+                  ? counters?.total
+                  : key === 'PENDING'
+                  ? counters?.pending
+                  : key === 'SUBMITTED'
+                  ? counters?.submitted
+                  : counters?.graded;
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.chip, filter === key && styles.chipActive]}
+                  onPress={() => setFilter(key)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, filter === key && styles.chipTextActive]}>
+                    {label}{count !== undefined ? ` · ${count}` : ''}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Featured card */}
+        {featured && (
+          <View style={styles.section}>
+            <FeaturedCard
+              assignment={featured}
+              onPress={() => navigation.navigate('AssignmentDetail', { id: featured.id })}
+            />
+          </View>
         )}
+
+        {/* This week / list */}
+        <View style={styles.section}>
+          <View style={styles.listHeader}>
+            <Text style={styles.listHeaderTitle}>
+              {isTeacher ? 'All assignments' : 'This week'}
+            </Text>
+            <Text style={styles.listHeaderCount}>{filtered.length} items</Text>
+          </View>
+
+          {filtered.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons
+                name="clipboard-check-outline"
+                size={48}
+                color={TOKENS.line}
+              />
+              <Text style={styles.emptyText}>No assignments here</Text>
+            </View>
+          ) : (
+            <View style={styles.asgnList}>
+              {filtered.map((item) => (
+                <AsgnRow
+                  key={item.id}
+                  item={item}
+                  onPress={() => navigation.navigate('AssignmentDetail', { id: item.id })}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={{ height: 110 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -246,132 +326,178 @@ const styles = StyleSheet.create({
   },
   retryBtnText: { color: TOKENS.paper, fontWeight: '600' },
 
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 16,
+  headerArea: { backgroundColor: TOKENS.paper, paddingTop: 56, paddingHorizontal: 20, paddingBottom: 4 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  headerSuper: { fontSize: 11, color: TOKENS.ink3, letterSpacing: 0.4, textTransform: 'uppercase' },
+  headerTitle: {
+    fontFamily: 'InstrumentSerif',
+    fontSize: 30,
+    color: TOKENS.ink,
+    letterSpacing: -0.5,
+    lineHeight: 34,
+    marginTop: 4,
   },
-  headerTitle: { fontSize: 24, fontWeight: '700', color: TOKENS.ink },
-  addBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  addFAB: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     backgroundColor: TOKENS.plum,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: TOKENS.plum,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    elevation: 4,
   },
 
-  counters: {
-    flexDirection: 'row',
-    marginHorizontal: 20,
-    backgroundColor: TOKENS.surface,
+  searchBar: {
+    height: 46,
     borderRadius: 14,
-    padding: 16,
-    marginBottom: 4,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: TOKENS.line,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 10,
+    marginBottom: 14,
   },
-  counterItem: { flex: 1, alignItems: 'center' },
-  counterValue: { fontSize: 22, fontWeight: '700' },
-  counterLabel: { fontSize: 11, color: TOKENS.ink3, marginTop: 2 },
+  searchInput: { flex: 1, fontSize: 14, color: TOKENS.ink3 },
 
-  scrollContent: { padding: 20, paddingTop: 8, paddingBottom: 40 },
+  chipsRow: { marginBottom: 4 },
+  chipsContent: { gap: 6, paddingBottom: 4 },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: TOKENS.line,
+  },
+  chipActive: { backgroundColor: TOKENS.plum, borderColor: TOKENS.plum },
+  chipText: { fontSize: 12, fontWeight: '600', color: TOKENS.ink2 },
+  chipTextActive: { color: '#fff' },
 
-  featuredCard: {
-    borderRadius: 20,
-    backgroundColor: TOKENS.plum,
-    padding: 20,
-    marginBottom: 16,
+  section: { paddingHorizontal: 20, paddingTop: 18 },
+
+  featured: {
+    borderRadius: 22,
+    padding: 18,
     overflow: 'hidden',
+    position: 'relative',
   },
   featuredGlow: {
     position: 'absolute',
+    top: -30,
+    right: -40,
     width: 160,
     height: 160,
     borderRadius: 80,
     backgroundColor: TOKENS.coral,
-    opacity: 0.18,
-    right: -40,
-    top: -40,
+    opacity: 0.35,
   },
-  featuredBadge: {
+  featuredBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,107,61,0.2)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: 6,
     marginBottom: 12,
   },
-  featuredBadgeText: { fontSize: 11, color: TOKENS.coral, fontWeight: '600' },
-  featuredTitle: { fontSize: 18, fontWeight: '700', color: TOKENS.paper, marginBottom: 4 },
-  featuredSubject: { fontSize: 13, color: TOKENS.plum300, marginBottom: 16 },
-  featuredProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  featuredProgressTrack: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    overflow: 'hidden',
-  },
-  featuredProgressFill: { height: 6, borderRadius: 3, backgroundColor: TOKENS.coral },
-  featuredProgressLabel: { fontSize: 12, color: TOKENS.plum300 },
-
-  filtersRow: { marginBottom: 8 },
-  filtersContent: { gap: 8, paddingVertical: 4 },
-  chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: TOKENS.surface,
-    borderWidth: 1.5,
-    borderColor: TOKENS.line,
-  },
-  chipActive: { backgroundColor: TOKENS.plum, borderColor: TOKENS.plum },
-  chipText: { fontSize: 13, fontWeight: '600', color: TOKENS.ink3 },
-  chipTextActive: { color: TOKENS.paper },
-
-  row: {
+  featuredDueBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: TOKENS.paper,
-    borderRadius: 12,
-    marginBottom: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: TOKENS.line2,
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,107,61,0.2)',
   },
-  rowAccent: { width: 4, alignSelf: 'stretch' },
-  rowBody: { flex: 1, padding: 14 },
-  rowHeader: {
+  featuredDueDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: TOKENS.coralWarm,
+  },
+  featuredDueBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: TOKENS.coralWarm,
+    letterSpacing: 0.5,
+  },
+  featuredSubBadge: { fontSize: 11.5, color: 'rgba(255,255,255,0.6)' },
+  featuredTitle: {
+    fontSize: 21,
+    fontWeight: '600',
+    color: '#fff',
+    letterSpacing: -0.4,
+    lineHeight: 25,
+    marginBottom: 10,
+  },
+  featuredDesc: { fontSize: 12.5, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 16 },
+  featuredFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  featuredTeacher: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  featuredTeacherName: { fontSize: 11.5, color: '#fff', fontWeight: '600' },
+  featuredTeacherSub: { fontSize: 10, color: 'rgba(255,255,255,0.55)' },
+  featuredStartBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: TOKENS.coral,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    shadowColor: TOKENS.coral,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  featuredStartText: { fontSize: 12.5, fontWeight: '600', color: '#fff' },
+
+  listHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: 10,
+  },
+  listHeaderTitle: { fontSize: 14.5, fontWeight: '700', color: TOKENS.ink },
+  listHeaderCount: { fontSize: 12, color: TOKENS.ink3 },
+
+  asgnList: { gap: 8 },
+  asgnRow: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: TOKENS.line,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  asgnIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  rowTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: TOKENS.ink, marginRight: 8 },
-  rowStatus: { fontSize: 12, fontWeight: '600' },
-  gradePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    backgroundColor: TOKENS.greenTint,
-    borderRadius: 8,
+  asgnBody: { flex: 1, minWidth: 0 },
+  asgnTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  asgnSubject: { fontSize: 10, color: TOKENS.ink3, letterSpacing: 0.5, fontWeight: '600' },
+  asgnDue: { fontSize: 11, color: TOKENS.ink3, fontWeight: '600' },
+  asgnTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: TOKENS.ink,
+    marginTop: 2,
+    letterSpacing: -0.1,
   },
-  gradePillText: { fontSize: 12, fontWeight: '700', color: TOKENS.green },
-  rowSubject: { fontSize: 12, color: TOKENS.ink3, marginBottom: 8 },
-  rowFooter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rowDue: { fontSize: 11, color: TOKENS.ink4, marginRight: 8 },
-  progressBarSmall: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: TOKENS.line2,
-    overflow: 'hidden',
-  },
-  progressBarFill: { height: 4, borderRadius: 2, backgroundColor: TOKENS.plum500 },
+  asgnGradeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  asgnFeedback: { fontSize: 11, color: TOKENS.ink3 },
+  asgnProgressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  asgnBarWrap: { flex: 1 },
+  asgnProgressPct: { fontSize: 10.5, color: TOKENS.ink3, fontWeight: '600' },
 
   emptyState: { alignItems: 'center', paddingVertical: 48, gap: 12 },
   emptyText: { fontSize: 15, color: TOKENS.ink3 },

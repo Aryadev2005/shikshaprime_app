@@ -4,6 +4,8 @@ import { createAuthRoutes } from './auth.routes';
 import { createAttendanceRoutes } from './attendance.routes';
 import { createAssignmentRoutes } from './assignment.routes';
 import { createPaymentRoutes } from './payment.routes';
+import { createChatRoutes } from './chat.routes';
+import { createNoticeRoutes } from './notice.routes';
 
 export const createMasterRouter = (): Router => {
   const router = Router();
@@ -15,7 +17,7 @@ export const createMasterRouter = (): Router => {
   router.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({
       status: 1,
-      data: { service: 'instivera-mobile-bff', version: '1.0.0' },
+      data: { service: 'instivera-gateway', version: '1.0.0' },
       message: 'OK',
     });
   });
@@ -36,9 +38,13 @@ export const createMasterRouter = (): Router => {
   const paymentRoutes = createPaymentRoutes();
   router.use('/payment', paymentRoutes);
 
-  // TODO: Mount domain routes
-  // router.use('/student', studentRoutes);
-  // router.use('/chat', chatRoutes);
+  // Chat routes (proxied to chat-service)
+  const chatRoutes = createChatRoutes();
+  router.use('/chat', chatRoutes);
+
+  // Notice routes (proxied to notice-service)
+  const noticeRoutes = createNoticeRoutes();
+  router.use('/', noticeRoutes);
 
   return router;
 };

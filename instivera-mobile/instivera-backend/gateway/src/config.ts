@@ -13,6 +13,7 @@ interface Config {
   teacherServiceUrl: string;
   chatServiceUrl: string;
   feesServiceUrl: string;
+  noticeServiceUrl: string;
 }
 
 const loadConfig = (): Config => {
@@ -34,6 +35,7 @@ const loadConfig = (): Config => {
     teacherServiceUrl: process.env.TEACHER_SERVICE_URL || 'http://localhost:9060',
     chatServiceUrl: process.env.CHAT_SERVICE_URL || 'http://localhost:9055',
     feesServiceUrl: process.env.FEES_SERVICE_URL || 'http://localhost:9056',
+    noticeServiceUrl: process.env.NOTICE_SERVICE_URL || 'http://localhost:9057',
   };
 };
 

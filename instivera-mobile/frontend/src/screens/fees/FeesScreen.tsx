@@ -7,10 +7,11 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TOKENS } from '../../theme/tokens';
 import { usePaymentSummary, useInitiatePayment } from '../../hooks/usePayment';
 import { BreakdownItem, RecentPayment } from '../../types/payment';
@@ -18,46 +19,34 @@ import { FeesStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<FeesStackParamList, 'Fees'>;
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const formatAmount = (n: number) =>
+const formatINR = (n: number) =>
   `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
-const ProgressBar: React.FC<{ paid: number; total: number }> = ({ paid, total }) => {
-  const pct = total > 0 ? Math.min((paid / total) * 100, 100) : 0;
-  return (
-    <View style={styles.progressTrack}>
-      <View style={[styles.progressFill, { width: `${pct}%` }]} />
-    </View>
-  );
-};
+// ─── Payment method tile ──────────────────────────────────────────────────────
 
-const PaymentMethodsRow: React.FC<{ onPress: () => void }> = ({ onPress }) => {
-  const methods = [
-    { icon: 'cellphone', label: 'UPI' },
-    { icon: 'credit-card-outline', label: 'Card' },
-    { icon: 'bank-outline', label: 'NB' },
-    { icon: 'cash-multiple', label: 'EMI' },
-  ] as const;
-
-  return (
-    <View style={styles.methodsRow}>
-      {methods.map((m) => (
-        <TouchableOpacity key={m.label} style={styles.methodItem} onPress={onPress}>
-          <View style={styles.methodIcon}>
-            <MaterialCommunityIcons name={m.icon} size={20} color={TOKENS.plum} />
-          </View>
-          <Text style={styles.methodLabel}>{m.label}</Text>
-        </TouchableOpacity>
-      ))}
+const PayMethod: React.FC<{
+  label: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+  onPress: () => void;
+}> = ({ label, icon, onPress }) => (
+  <TouchableOpacity style={styles.methodTile} onPress={onPress} activeOpacity={0.7}>
+    <View style={styles.methodIcon}>
+      <MaterialCommunityIcons name={icon} size={16} color={TOKENS.plum} />
     </View>
-  );
-};
+    <Text style={styles.methodLabel}>{label}</Text>
+  </TouchableOpacity>
+);
+
+// ─── Separator ────────────────────────────────────────────────────────────────
+
+const Sep: React.FC = () => <View style={styles.sep} />;
+
+// ─── Fee breakdown row ────────────────────────────────────────────────────────
 
 const FeeRow: React.FC<{ item: BreakdownItem }> = ({ item }) => {
   const isPaid = item.status === 'PAID';
   const isOverdue = item.status === 'OVERDUE';
-  const statusColor = isPaid ? TOKENS.green : isOverdue ? TOKENS.red : TOKENS.amber;
+  const amount = isPaid ? item.amount : item.balance;
 
   return (
     <View style={styles.feeRow}>
@@ -65,35 +54,66 @@ const FeeRow: React.FC<{ item: BreakdownItem }> = ({ item }) => {
         <Text style={styles.feeLabel}>{item.label}</Text>
         {item.dueDate ? (
           <Text style={[styles.feeDue, isOverdue && { color: TOKENS.red }]}>
-            Due {new Date(item.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+            Due{' '}
+            {new Date(item.dueDate).toLocaleDateString('en-IN', {
+              day: 'numeric',
+              month: 'short',
+            })}
           </Text>
         ) : null}
       </View>
-      <View style={styles.feeRowRight}>
-        <Text style={[styles.feeAmount, isPaid && { color: TOKENS.green }]}>
-          {isPaid ? formatAmount(item.amount) : formatAmount(item.balance)}
-        </Text>
-        <View style={[styles.feeStatusDot, { backgroundColor: statusColor }]} />
-      </View>
+      <Text
+        style={[
+          styles.feeAmount,
+          isPaid && { color: TOKENS.green },
+          isOverdue && { color: TOKENS.red },
+        ]}
+      >
+        {formatINR(amount)}
+      </Text>
     </View>
   );
 };
 
+// ─── Recent payment row ───────────────────────────────────────────────────────
+
 const RecentRow: React.FC<{ item: RecentPayment }> = ({ item }) => (
   <View style={styles.recentRow}>
     <View style={styles.recentIcon}>
-      <MaterialCommunityIcons name="check-circle" size={18} color={TOKENS.green} />
+      <MaterialCommunityIcons name="check" size={16} color={TOKENS.green} />
     </View>
     <View style={styles.recentInfo}>
       <Text style={styles.recentLabel}>{item.label}</Text>
-      <Text style={styles.recentDate}>
-        {new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
-        {' · '}{item.mode}
+      <Text style={styles.recentMeta}>
+        {new Date(item.date).toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+        })}{' '}
+        · {item.mode}
       </Text>
     </View>
-    <Text style={styles.recentAmount}>{formatAmount(item.amount)}</Text>
+    <Text style={styles.recentAmount}>{formatINR(item.amount)}</Text>
   </View>
 );
+
+// ─── Section header ───────────────────────────────────────────────────────────
+
+const SectionHead: React.FC<{ title: string; right?: string; onRight?: () => void }> = ({
+  title,
+  right,
+  onRight,
+}) => (
+  <View style={styles.sectionHead}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    {right ? (
+      <TouchableOpacity onPress={onRight}>
+        <Text style={styles.sectionRight}>{right}</Text>
+      </TouchableOpacity>
+    ) : null}
+  </View>
+);
+
+// ─── Main screen ─────────────────────────────────────────────────────────────
 
 export const FeesScreen: React.FC<Props> = ({ navigation }) => {
   const { data, isLoading, isError, refetch } = usePaymentSummary();
@@ -114,7 +134,8 @@ export const FeesScreen: React.FC<Props> = ({ navigation }) => {
             amount: result.amount,
           });
         },
-        onError: () => Alert.alert('Error', 'Failed to initiate payment. Please try again.'),
+        onError: () =>
+          Alert.alert('Error', 'Failed to initiate payment. Please try again.'),
       },
     );
   };
@@ -139,278 +160,331 @@ export const FeesScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   const { outstanding, annualTotal, paidSoFar, breakdown, recentPayments } = data;
-  const progressWidth = SCREEN_WIDTH - 48;
+  const paidPct = annualTotal > 0 ? Math.min((paidSoFar / annualTotal) * 100, 100) : 0;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* Fixed header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Fees & Payments</Text>
-        <TouchableOpacity onPress={() => Alert.alert('Coming Soon', 'Receipt download available soon.')}>
-          <MaterialCommunityIcons name="download-outline" size={24} color={TOKENS.ink3} />
+        <Text style={styles.headerTitle}>Fees</Text>
+        <TouchableOpacity
+          style={styles.headerIcon}
+          onPress={() =>
+            Alert.alert('Coming Soon', 'Receipt download available soon.')
+          }
+        >
+          <MaterialCommunityIcons name="download" size={18} color={TOKENS.ink} />
         </TouchableOpacity>
       </View>
 
-      {/* Hero card */}
-      <View style={styles.heroCard}>
-        <View style={styles.heroGlow} />
-        {outstanding.isOverdue && (
-          <View style={styles.overdueBadge}>
-            <MaterialCommunityIcons name="alert" size={12} color={TOKENS.paper} />
-            <Text style={styles.overdueBadgeText}>OVERDUE</Text>
-          </View>
-        )}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Hero card */}
+        <LinearGradient
+          colors={[TOKENS.plum700, TOKENS.plum]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={styles.heroCard}
+        >
+          {/* Glow blob */}
+          <View style={styles.heroGlow} pointerEvents="none" />
 
-        <Text style={styles.heroLabel}>Outstanding Balance</Text>
-        <Text style={styles.heroAmount}>{formatAmount(outstanding.totalAmount)}</Text>
+          {outstanding.isOverdue && (
+            <View style={styles.overdueBadge}>
+              <MaterialCommunityIcons name="alert" size={12} color="#fff" />
+              <Text style={styles.overdueBadgeText}>OVERDUE</Text>
+            </View>
+          )}
 
-        {outstanding.dueDate && (
-          <Text style={styles.heroDue}>
-            Due by {new Date(outstanding.dueDate).toLocaleDateString('en-IN', {
-              day: 'numeric', month: 'long',
-            })}
-          </Text>
-        )}
+          <Text style={styles.heroSubLabel}>OUTSTANDING BALANCE · Q2</Text>
+          <View style={styles.heroAmountRow}>
+            <Text style={styles.heroCurrency}>₹</Text>
+            <Text style={styles.heroAmount}>
+              {outstanding.totalAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+            </Text>
+            <Text style={styles.heroDecimal}>.00</Text>
+          </View>
 
-        {/* Progress */}
-        <View style={styles.heroProgressSection}>
-          <View style={styles.heroProgressLabels}>
-            <Text style={styles.heroProgressPaid}>Paid {formatAmount(paidSoFar)}</Text>
-            <Text style={styles.heroProgressTotal}>{formatAmount(annualTotal)} annual</Text>
+          {outstanding.dueDate && (
+            <Text style={styles.heroDue}>
+              Due{' '}
+              {new Date(outstanding.dueDate).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'long',
+              })}{' '}
+              · Late fee after due date
+            </Text>
+          )}
+
+          {/* Progress bar */}
+          <View style={styles.heroProgress}>
+            <View style={styles.heroProgressLabels}>
+              <Text style={styles.heroProgressLabel}>{formatINR(paidSoFar)} paid</Text>
+              <Text style={styles.heroProgressLabel}>of {formatINR(annualTotal)} annual</Text>
+            </View>
+            <View style={styles.heroProgressTrack}>
+              <View style={[styles.heroProgressFill, { width: `${paidPct}%` }]} />
+            </View>
           </View>
-          <View style={[styles.heroProgressTrack, { width: progressWidth }]}>
-            <View
-              style={[
-                styles.heroProgressFill,
-                { width: annualTotal > 0 ? `${Math.min((paidSoFar / annualTotal) * 100, 100)}%` : '0%' },
-              ]}
-            />
-          </View>
+
+          {/* Pay now button */}
+          <TouchableOpacity
+            style={[styles.payNowBtn, isInitiating && { opacity: 0.5 }]}
+            onPress={handlePayNow}
+            disabled={isInitiating || outstanding.totalAmount === 0}
+            activeOpacity={0.85}
+          >
+            {isInitiating ? (
+              <ActivityIndicator color={TOKENS.plum} size="small" />
+            ) : (
+              <>
+                <Text style={styles.payNowText}>
+                  Pay {formatINR(outstanding.totalAmount)} now
+                </Text>
+                <MaterialCommunityIcons name="arrow-right" size={16} color={TOKENS.plum} />
+              </>
+            )}
+          </TouchableOpacity>
+        </LinearGradient>
+
+        {/* Payment methods */}
+        <SectionHead title="Pay with" />
+        <View style={styles.methodsGrid}>
+          <PayMethod label="UPI" icon="qrcode-scan" onPress={handlePayNow} />
+          <PayMethod label="Card" icon="credit-card-outline" onPress={handlePayNow} />
+          <PayMethod label="NB" icon="bank-outline" onPress={handlePayNow} />
+          <PayMethod label="EMI" icon="cash-multiple" onPress={handlePayNow} />
         </View>
 
-        {/* Pay now button */}
-        <TouchableOpacity
-          style={[styles.payNowBtn, isInitiating && styles.payNowBtnDisabled]}
-          onPress={handlePayNow}
-          disabled={isInitiating || outstanding.totalAmount === 0}
-        >
-          {isInitiating ? (
-            <ActivityIndicator color={TOKENS.plum} size="small" />
-          ) : (
-            <>
-              <MaterialCommunityIcons name="lightning-bolt" size={18} color={TOKENS.plum} />
-              <Text style={styles.payNowBtnText}>Pay Now</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Fee breakdown */}
+        {breakdown.length > 0 && (
+          <>
+            <SectionHead
+              title="What's owed"
+              right="View invoice"
+              onRight={() =>
+                Alert.alert('Coming Soon', 'Invoice view will be available soon.')
+              }
+            />
+            <View style={styles.listCard}>
+              {breakdown.map((item, idx) => (
+                <React.Fragment key={item.label}>
+                  <FeeRow item={item} />
+                  {idx < breakdown.length - 1 && <Sep />}
+                </React.Fragment>
+              ))}
+              <Sep />
+              <View style={styles.feeRow}>
+                <Text style={[styles.feeLabel, { fontWeight: '700' }]}>Total</Text>
+                <Text style={[styles.feeAmount, { fontSize: 16, fontWeight: '700' }]}>
+                  {formatINR(outstanding.totalAmount)}
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
 
-      {/* Payment methods */}
-      <Text style={styles.sectionTitle}>Pay with</Text>
-      <PaymentMethodsRow onPress={handlePayNow} />
+        {/* Recent payments */}
+        {recentPayments.length > 0 && (
+          <>
+            <SectionHead title="Recent payments" right="All" />
+            <View style={styles.recentList}>
+              {recentPayments.map((item, idx) => (
+                <RecentRow key={idx} item={item} />
+              ))}
+            </View>
+          </>
+        )}
 
-      {/* What's owed breakdown */}
-      {breakdown.length > 0 && (
-        <>
-          <Text style={styles.sectionTitle}>What's Owed</Text>
-          <View style={styles.card}>
-            {breakdown.map((item, idx) => (
-              <React.Fragment key={item.label}>
-                <FeeRow item={item} />
-                {idx < breakdown.length - 1 && <View style={styles.divider} />}
-              </React.Fragment>
-            ))}
-          </View>
-        </>
-      )}
-
-      {/* Recent payments */}
-      {recentPayments.length > 0 && (
-        <>
-          <Text style={styles.sectionTitle}>Recent Payments</Text>
-          <View style={styles.card}>
-            {recentPayments.map((item, idx) => (
-              <React.Fragment key={idx}>
-                <RecentRow item={item} />
-                {idx < recentPayments.length - 1 && <View style={styles.divider} />}
-              </React.Fragment>
-            ))}
-          </View>
-        </>
-      )}
-
-      {/* Download receipt */}
-      <TouchableOpacity
-        style={styles.downloadBtn}
-        onPress={() => Alert.alert('Coming Soon', 'Receipt download available soon.')}
-      >
-        <MaterialCommunityIcons name="file-download-outline" size={18} color={TOKENS.plum} />
-        <Text style={styles.downloadBtnText}>Download Receipt</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <View style={{ height: 110 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: TOKENS.paper },
-  content: { padding: 24, paddingBottom: 48 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   errorText: { fontSize: 16, color: TOKENS.ink3, marginBottom: 16 },
-  retryBtn: { backgroundColor: TOKENS.plum, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 8 },
+  retryBtn: {
+    backgroundColor: TOKENS.plum,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
   retryBtnText: { color: TOKENS.paper, fontWeight: '600' },
 
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 56,
+    paddingBottom: 12,
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: TOKENS.ink },
+  headerIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: TOKENS.surface,
+    borderWidth: 1,
+    borderColor: TOKENS.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  content: { paddingHorizontal: 16, paddingBottom: 20 },
 
   heroCard: {
     borderRadius: 24,
-    backgroundColor: TOKENS.plum,
-    padding: 24,
+    padding: 20,
     marginBottom: 24,
     overflow: 'hidden',
+    position: 'relative',
   },
   heroGlow: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    top: -40,
+    right: -40,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
     backgroundColor: TOKENS.coral,
-    opacity: 0.15,
-    right: -50,
-    top: -50,
+    opacity: 0.3,
   },
   overdueBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: TOKENS.red,
     alignSelf: 'flex-start',
+    backgroundColor: TOKENS.red,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     marginBottom: 12,
   },
-  overdueBadgeText: { fontSize: 11, color: TOKENS.paper, fontWeight: '700' },
-  heroLabel: { fontSize: 13, color: TOKENS.plum300, marginBottom: 8 },
-  heroAmount: { fontSize: 44, fontWeight: '700', color: TOKENS.paper, letterSpacing: -1 },
-  heroDue: { fontSize: 13, color: TOKENS.plum300, marginTop: 4, marginBottom: 20 },
+  overdueBadgeText: { fontSize: 11, color: '#fff', fontWeight: '700' },
 
-  heroProgressSection: { marginBottom: 20 },
+  heroSubLabel: { fontSize: 11.5, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.4 },
+  heroAmountRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 8 },
+  heroCurrency: { fontSize: 22, color: 'rgba(255,255,255,0.7)', fontWeight: '700' },
+  heroAmount: {
+    fontSize: 42,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: -1.4,
+    lineHeight: 48,
+  },
+  heroDecimal: { fontSize: 18, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
+  heroDue: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 8 },
+
+  heroProgress: { marginTop: 16, marginBottom: 16 },
   heroProgressLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  heroProgressPaid: { fontSize: 12, color: TOKENS.plum300 },
-  heroProgressTotal: { fontSize: 12, color: TOKENS.plum300 },
+  heroProgressLabel: { fontSize: 11, color: 'rgba(255,255,255,0.7)' },
   heroProgressTrack: {
     height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
   },
-  heroProgressFill: { height: 6, borderRadius: 3, backgroundColor: TOKENS.coral },
+  heroProgressFill: { height: 6, borderRadius: 999, backgroundColor: TOKENS.coral },
 
   payNowBtn: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: TOKENS.paper,
+    height: 50,
     borderRadius: 14,
-    paddingVertical: 14,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
-  payNowBtnDisabled: { opacity: 0.5 },
-  payNowBtnText: { fontSize: 16, fontWeight: '700', color: TOKENS.plum },
+  payNowText: { fontSize: 15, fontWeight: '600', color: TOKENS.plum },
 
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: TOKENS.ink,
-    marginBottom: 12,
-    marginTop: 4,
-  },
-
-  methodsRow: {
+  sectionHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingHorizontal: 4,
+    marginBottom: 10,
+    marginTop: 4,
+  },
+  sectionTitle: { fontSize: 14.5, fontWeight: '700', color: TOKENS.ink },
+  sectionRight: { fontSize: 12, color: TOKENS.plum, fontWeight: '600' },
+
+  methodsGrid: {
+    flexDirection: 'row',
+    gap: 8,
     marginBottom: 24,
   },
-  methodItem: { alignItems: 'center', gap: 6 },
-  methodIcon: {
-    width: 52,
-    height: 52,
+  methodTile: {
+    flex: 1,
+    backgroundColor: '#fff',
     borderRadius: 14,
+    borderWidth: 1,
+    borderColor: TOKENS.line,
+    paddingVertical: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  methodIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
     backgroundColor: TOKENS.plumTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  methodLabel: { fontSize: 11, color: TOKENS.ink3, fontWeight: '600' },
+  methodLabel: { fontSize: 11, fontWeight: '600', color: TOKENS.ink2 },
 
-  card: {
-    backgroundColor: TOKENS.surface,
+  listCard: {
+    backgroundColor: '#fff',
     borderRadius: 16,
-    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: TOKENS.line,
+    paddingHorizontal: 14,
     marginBottom: 24,
   },
-  divider: { height: 1, backgroundColor: TOKENS.line2 },
-
+  sep: {
+    height: 1,
+    backgroundColor: TOKENS.line2,
+    marginHorizontal: 0,
+  },
   feeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   feeRowLeft: { flex: 1, marginRight: 12 },
-  feeLabel: { fontSize: 14, fontWeight: '600', color: TOKENS.ink },
+  feeLabel: { fontSize: 13.5, color: TOKENS.ink2, fontWeight: '500' },
   feeDue: { fontSize: 11, color: TOKENS.ink3, marginTop: 2 },
-  feeRowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  feeAmount: { fontSize: 15, fontWeight: '700', color: TOKENS.ink },
-  feeStatusDot: { width: 8, height: 8, borderRadius: 4 },
+  feeAmount: { fontSize: 13.5, color: TOKENS.ink, fontWeight: '600', letterSpacing: -0.2 },
 
+  recentList: { gap: 8, marginBottom: 24 },
   recentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
     gap: 12,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: TOKENS.line,
+    padding: 11,
   },
   recentIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     backgroundColor: TOKENS.greenTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  recentInfo: { flex: 1 },
-  recentLabel: { fontSize: 14, fontWeight: '600', color: TOKENS.ink },
-  recentDate: { fontSize: 11, color: TOKENS.ink3, marginTop: 2 },
-  recentAmount: { fontSize: 14, fontWeight: '700', color: TOKENS.green },
-
-  downloadBtn: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: TOKENS.plum,
-    borderRadius: 12,
-    paddingVertical: 14,
-    backgroundColor: TOKENS.plumTint,
-  },
-  downloadBtnText: { fontSize: 15, fontWeight: '600', color: TOKENS.plum },
-
-  // Generic progress bar (used by ProgressBar component)
-  progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: TOKENS.line,
-    overflow: 'hidden' as const,
-  },
-  progressFill: { height: 6, borderRadius: 3, backgroundColor: TOKENS.plum },
+  recentInfo: { flex: 1, minWidth: 0 },
+  recentLabel: { fontSize: 13.5, fontWeight: '600', color: TOKENS.ink },
+  recentMeta: { fontSize: 11, color: TOKENS.ink3, marginTop: 1 },
+  recentAmount: { fontSize: 13.5, fontWeight: '700', color: TOKENS.ink, letterSpacing: -0.2 },
 });

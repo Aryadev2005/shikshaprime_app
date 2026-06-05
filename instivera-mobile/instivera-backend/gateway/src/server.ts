@@ -11,7 +11,7 @@ const server = app.listen(config.port, () => {
       port: config.port,
       environment: config.nodeEnv,
     },
-    'INSTIVERA Mobile BFF started successfully',
+    'INSTIVERA Gateway started successfully',
   );
 });
 
