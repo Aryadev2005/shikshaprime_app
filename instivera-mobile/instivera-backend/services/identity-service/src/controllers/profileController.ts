@@ -19,7 +19,7 @@ export const getMyProfile = async (req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const profile = await profileService.getProfile(user.user_id, user.role, tenant);
+    const profile = await profileService.getProfile(user.email, user.role, tenant);
 
     sendSuccess(res, profile, 'Profile fetched successfully');
   } catch (error) {

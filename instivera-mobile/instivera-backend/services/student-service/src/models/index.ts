@@ -6,6 +6,8 @@ import { defineStudentSubject } from './studentSubject';
 import { defineSubject } from './subject';
 import { defineTeacherAssignment } from './teacherAssignment';
 import { defineAssignmentSubmission } from './assignmentSubmission';
+import { defineRepositoryCategory } from './repositoryCategory';
+import { defineRepositoryFile } from './repositoryFile';
 
 export function getTenantModels(tenant: string) {
   const sequelize = getTenantSequelize(tenant);
@@ -18,6 +20,8 @@ export function getTenantModels(tenant: string) {
   const Subject = defineSubject(sequelize);
   const TeacherAssignment = defineTeacherAssignment(sequelize);
   const AssignmentSubmission = defineAssignmentSubmission(sequelize);
+  const RepositoryCategory = defineRepositoryCategory(sequelize);
+  const RepositoryFile = defineRepositoryFile(sequelize);
 
   // Step 2: define associations
   Student.belongsTo(Department, { foreignKey: 'department_id', as: 'department' });
@@ -57,5 +61,7 @@ export function getTenantModels(tenant: string) {
     Subject,
     TeacherAssignment,
     AssignmentSubmission,
+    RepositoryCategory,
+    RepositoryFile,
   };
 }

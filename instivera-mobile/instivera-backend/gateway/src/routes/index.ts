@@ -7,6 +7,9 @@ import { createPaymentRoutes } from './payment.routes';
 import { createChatRoutes } from './chat.routes';
 import { createNoticeRoutes } from './notice.routes';
 import { createRegistrationRoutes } from './registration.routes';
+import { createProfileRoutes } from './profile.routes';
+import { createTeacherRoutes } from './teacher.routes';
+import { createRepositoryRoutes } from './repository.routes';
 
 export const createMasterRouter = (): Router => {
   const router = Router();
@@ -46,6 +49,18 @@ export const createMasterRouter = (): Router => {
   // Notice routes (proxied to notice-service)
   const noticeRoutes = createNoticeRoutes();
   router.use('/', noticeRoutes);
+
+  // Profile routes
+  const profileRoutes = createProfileRoutes();
+  router.use('/profile', profileRoutes);
+
+  // Teacher routes
+  const teacherRoutes = createTeacherRoutes();
+  router.use('/teacher', teacherRoutes);
+
+  // Repository routes (student only)
+  const repositoryRoutes = createRepositoryRoutes();
+  router.use('/repository', repositoryRoutes);
 
   // Registration routes — PUBLIC (no auth middleware)
   const registrationRoutes = createRegistrationRoutes();

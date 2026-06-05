@@ -18,6 +18,7 @@ router.get('/attendance/class-students', authMiddleware, attendanceController.ge
 router.post('/attendance/bulk-mark', authMiddleware, attendanceController.bulkMarkAttendance);
 router.get('/attendance/class-summary', authMiddleware, attendanceController.getClassSummary);
 router.get('/attendance/my-records', authMiddleware, attendanceController.getMyAttendance);
+router.get('/my-attendance', authMiddleware, attendanceController.getMyAttendance);
 
 // ── Assignments ───────────────────────────────────────────────────────────
 // IMPORTANT: /metadata and /grade/:id must be declared BEFORE /:id to

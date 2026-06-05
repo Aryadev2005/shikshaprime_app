@@ -36,11 +36,21 @@ const forwardGet = async (
 export const createNoticeRoutes = (): Router => {
   const router = Router();
 
+  // Paginated list — forwards page and pageSize (mapped to limit)
   router.get('/notices', requireAuth, (req, res, next) => {
     const audience = getRoleAudience(req.user?.role);
-    forwardGet(req, res, next, '/notices', { audience });
+    const page = req.query.page ?? 1;
+    const limit = req.query.pageSize ?? req.query.limit ?? 20;
+    forwardGet(req, res, next, '/notices', { audience, page, limit });
   });
 
+  // Recent notices (last 6 months ordered newest-first) — must be before /:id
+  router.get('/notices/recent', requireAuth, (req, res, next) => {
+    const audience = getRoleAudience(req.user?.role);
+    forwardGet(req, res, next, '/notices', { audience, page: 1, limit: 20 });
+  });
+
+  // Single notice by id
   router.get('/notices/:id', requireAuth, (req, res, next) => {
     forwardGet(req, res, next, `/notices/${req.params.id}`);
   });

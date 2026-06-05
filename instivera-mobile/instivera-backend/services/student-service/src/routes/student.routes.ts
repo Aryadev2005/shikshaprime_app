@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as studentController from '../controllers/student.controller';
 import * as assignmentController from '../controllers/assignment.controller';
+import * as repositoryController from '../controllers/repository.controller';
 import { requireAuth } from '../middleware/auth-middleware';
 import { handleAssignmentUpload } from '../middleware/upload.middleware';
 
@@ -19,5 +20,12 @@ router.post('/assignments/submit', requireAuth, handleAssignmentUpload, assignme
 
 router.get('/assignments', requireAuth, assignmentController.listMyAssignments);
 router.get('/assignments/:id', requireAuth, assignmentController.getAssignmentById);
+
+// ── Repository ────────────────────────────────────────────────────────────
+// /files/:fileId/download must be declared BEFORE /files/:fileId to avoid shadowing
+router.get('/repository/categories', requireAuth, repositoryController.getCategories);
+router.get('/repository/categories/:categoryId/files', requireAuth, repositoryController.getFilesByCategory);
+router.get('/repository/files/:fileId/download', requireAuth, repositoryController.downloadFile);
+router.get('/repository/files/:fileId', requireAuth, repositoryController.getFileById);
 
 export default router;

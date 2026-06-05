@@ -19,6 +19,7 @@ export type AttendanceStackParamList = {
     classId: string;
   };
   StudentHub: { studentId: string; studentName: string; roll: string };
+  TeacherAttendanceCalendar: undefined;
 };
 
 export type AssignmentsStackParamList = {
@@ -39,6 +40,15 @@ export type ChatStackParamList = {
 
 export type CalendarStackParamList = {
   Calendar: undefined;
+};
+
+export type ProfileStackParamList = {
+  Profile: undefined;
+};
+
+export type NoticesStackParamList = {
+  NoticeList: undefined;
+  NoticeDetail: { id: string; title: string };
 };
 
 /** @deprecated use AttendanceStackParamList */

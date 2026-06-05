@@ -17,6 +17,7 @@ import { TOKENS } from '../theme/tokens';
 import { StudentAttendanceScreen } from '../screens/attendance/StudentAttendanceScreen';
 import { AttendanceTakerScreen } from '../screens/attendance/AttendanceTakerScreen';
 import { AttendanceReviewScreen } from '../screens/attendance/AttendanceReviewScreen';
+import { TeacherAttendanceCalendarScreen } from '../screens/attendance/TeacherAttendanceCalendarScreen';
 import { AssignmentsScreen } from '../screens/assignments/AssignmentsScreen';
 import { AssignmentDetailScreen } from '../screens/assignments/AssignmentDetailScreen';
 import { CreateAssignmentScreen } from '../screens/assignments/CreateAssignmentScreen';
@@ -26,12 +27,17 @@ import { CalendarScreen } from '../screens/calendar/CalendarScreen';
 import { StudentHubScreen } from '../screens/students/StudentHubScreen';
 import { ChatConversationsScreen } from '../screens/chat/ChatConversationsScreen';
 import { ChatRoomScreen } from '../screens/chat/ChatRoomScreen';
+import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { NoticeListScreen } from '../screens/notices/NoticeListScreen';
+import { NoticeDetailScreen } from '../screens/notices/NoticeDetailScreen';
 import {
   AttendanceStackParamList,
   AssignmentsStackParamList,
   FeesStackParamList,
   ChatStackParamList,
   CalendarStackParamList,
+  ProfileStackParamList,
+  NoticesStackParamList,
 } from './types';
 
 // ─── Stack navigators ─────────────────────────────────────────────────────────
@@ -41,6 +47,8 @@ const AssignmentsStack = createNativeStackNavigator<AssignmentsStackParamList>()
 const FeesStack = createNativeStackNavigator<FeesStackParamList>();
 const ChatStack = createNativeStackNavigator<ChatStackParamList>();
 const CalendarStack = createNativeStackNavigator<CalendarStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+const NoticesStack = createNativeStackNavigator<NoticesStackParamList>();
 
 type RootStackParamList = { Auth: undefined };
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -90,6 +98,15 @@ const TeacherHomeScreen: React.FC<{
       >
         <Text style={homeStyles.btnText}>Start</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={homeStyles.btnSecondary}
+        onPress={() =>
+          navigation.navigate('TeacherAttendanceCalendar', {} as object)
+        }
+      >
+        <Text style={homeStyles.btnSecondaryText}>My Attendance</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -122,6 +139,16 @@ const homeStyles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.5 },
   btnText: { fontSize: 16, fontWeight: '700', color: TOKENS.paper },
+  btnSecondary: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center' as const,
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderColor: TOKENS.plum,
+    backgroundColor: TOKENS.plumTint,
+  },
+  btnSecondaryText: { fontSize: 16, fontWeight: '700', color: TOKENS.plum },
 });
 
 // ─── Nested stacks ────────────────────────────────────────────────────────────
@@ -139,6 +166,10 @@ const AttendanceStackScreen: React.FC<{ role: string | null }> = ({ role }) => (
         <AttendanceStack.Screen name="AttendanceTaker" component={AttendanceTakerScreen} />
         <AttendanceStack.Screen name="AttendanceReview" component={AttendanceReviewScreen} />
         <AttendanceStack.Screen name="StudentHub" component={StudentHubScreen} />
+        <AttendanceStack.Screen
+          name="TeacherAttendanceCalendar"
+          component={TeacherAttendanceCalendarScreen as React.ComponentType}
+        />
       </>
     )}
   </AttendanceStack.Navigator>
@@ -172,6 +203,19 @@ const CalendarStackScreen: React.FC = () => (
   </CalendarStack.Navigator>
 );
 
+const ProfileStackScreen: React.FC = () => (
+  <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Screen name="Profile" component={ProfileScreen} />
+  </ProfileStack.Navigator>
+);
+
+const NoticesStackScreen: React.FC = () => (
+  <NoticesStack.Navigator screenOptions={{ headerShown: false }}>
+    <NoticesStack.Screen name="NoticeList" component={NoticeListScreen} />
+    <NoticesStack.Screen name="NoticeDetail" component={NoticeDetailScreen} />
+  </NoticesStack.Navigator>
+);
+
 // ─── Bottom tab navigator ─────────────────────────────────────────────────────
 
 type TabParamList = {
@@ -180,6 +224,8 @@ type TabParamList = {
   Fees: undefined;
   Chat: undefined;
   Calendar: undefined;
+  Notices: undefined;
+  Profile: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -192,6 +238,8 @@ const TAB_ICONS_INACTIVE: TabIconMap = {
   Fees: 'credit-card-outline',
   Chat: 'chat-outline',
   Calendar: 'calendar-month-outline',
+  Notices: 'bell-outline',
+  Profile: 'account-circle-outline',
 };
 
 const TAB_ICONS_ACTIVE: TabIconMap = {
@@ -200,6 +248,8 @@ const TAB_ICONS_ACTIVE: TabIconMap = {
   Fees: 'credit-card',
   Chat: 'chat',
   Calendar: 'calendar-month',
+  Notices: 'bell',
+  Profile: 'account-circle',
 };
 
 const MainTabs: React.FC<{ token: string }> = ({ token }) => {
@@ -254,6 +304,16 @@ const MainTabs: React.FC<{ token: string }> = ({ token }) => {
         name="Calendar"
         component={CalendarStackScreen}
         options={{ title: 'Calendar' }}
+      />
+      <Tab.Screen
+        name="Notices"
+        component={NoticesStackScreen}
+        options={{ title: 'Notices' }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStackScreen}
+        options={{ title: 'Profile' }}
       />
     </Tab.Navigator>
   );
