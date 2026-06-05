@@ -1,0 +1,45 @@
+{
+  "name": "instivera-backend",
+  "version": "1.0.0",
+  "description": "Microservices backend for Instivera application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./services/identity-service/src/server.js",
+    "start:student": "node ./services/student-service/src/server.js",
+    "start:payment": "node ./services/payment-service/src/server.js",
+    "start:fees": "node ./services/fees-service/src/server.js",
+    "start:teacher": "node ./services/teacher-service/src/server.js",
+    "start:chat": "node ./services/chat-service/src/server.js",
+    "start:notice": "node ./services/notice-service/src/server.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "sequelize": "^6.6.5",
+    "pino": "^6.11.0",
+    "dotenv": "^10.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.3.5",
+    "jest": "^27.0.6",
+    "ts-jest": "^27.0.3",
+    "@types/jest": "^27.0.1",
+    "@types/node": "^16.7.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/instivera-backend.git"
+  },
+  "keywords": [
+    "microservices",
+    "backend",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/instivera-backend/issues"
+  },
+  "homepage": "https://github.com/yourusername/instivera-backend#readme"
+}
