@@ -19,7 +19,7 @@ const config: Config = {
     host: process.env.DB_HOST || 'localhost',
     username: process.env.DB_USERNAME || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_DATABASE || 'notice_db',
+    database: process.env.DB_NAME || 'shikshaprime_main',
   },
   jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret',
 };

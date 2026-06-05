@@ -13,12 +13,12 @@ interface Config {
 }
 
 const config: Config = {
-  port: parseInt(process.env.PORT || '9058', 10),
+  port: parseInt(process.env.SERVICE_PORT || process.env.PORT || '9055', 10),
   db: {
     host: process.env.DB_HOST || 'localhost',
     username: process.env.DB_USERNAME || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_DATABASE || 'chat_db',
+    database: process.env.DB_NAME || 'shikshaprime_main',
   },
   jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret',
 };

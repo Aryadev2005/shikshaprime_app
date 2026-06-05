@@ -7,7 +7,7 @@ import chatRoutes from './routes/chat.routes';
 import { errorMiddleware } from './middleware/error-middleware';
 import { tenantMiddleware } from './middleware/tenant-middleware';
 import { verifyToken } from './middleware/auth-middleware';
-import { getTenantSequelize } from './db';
+import { getTenantSequelize, globalSequelize } from './db';
 import { persistAndFormatMessage } from './services/message.service';
 import { MessageService } from './services/message.service';
 
@@ -29,6 +29,15 @@ app.get('/health', (_req, res) => {
     data: { service: 'chat-service', version: '1.0.0' },
     message: 'OK',
   });
+});
+
+app.get('/db-check', async (_req, res) => {
+  try {
+    await globalSequelize.authenticate();
+    res.json({ status: 1, message: 'Connected to ShikshaPrime MySQL successfully', host: config.db.host, database: config.db.database });
+  } catch (err: any) {
+    res.status(500).json({ status: 0, message: 'Database connection failed', error: err.message });
+  }
 });
 
 app.use(errorMiddleware);

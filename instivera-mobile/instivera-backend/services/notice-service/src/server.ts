@@ -5,7 +5,7 @@ import config from './config';
 import noticeRoutes from './routes/notice.routes';
 import { errorMiddleware } from './middleware/error-middleware';
 import { tenantMiddleware } from './middleware/tenant-middleware';
-import { getTenantSequelize } from './db';
+import { getTenantSequelize, globalSequelize } from './db';
 
 const app = express();
 const server = createServer(app);
@@ -19,6 +19,15 @@ app.use('/notices', noticeRoutes);
 
 app.get('/health', (_req, res) => {
   res.status(200).send('OK');
+});
+
+app.get('/db-check', async (_req, res) => {
+  try {
+    await globalSequelize.authenticate();
+    res.json({ status: 1, message: 'Connected to ShikshaPrime MySQL successfully', host: config.db.host, database: config.db.database });
+  } catch (err: any) {
+    res.status(500).json({ status: 0, message: 'Database connection failed', error: err.message });
+  }
 });
 
 app.use(errorMiddleware);

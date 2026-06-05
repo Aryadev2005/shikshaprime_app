@@ -6,7 +6,7 @@ import paymentRoutes from './routes/payment.routes';
 import { errorMiddleware } from './middleware/error-middleware';
 import { tenantMiddleware } from './middleware/tenant-middleware';
 import { requireAuth } from './middleware/auth-middleware';
-import { getTenantSequelize } from './db';
+import { getTenantSequelize, globalSequelize } from './db';
 import * as paymentController from './controllers/payment.controller';
 
 const app = express();
@@ -32,6 +32,15 @@ app.get('/students/:paymentId/status', requireAuth, paymentController.getPayment
 // ── Health ────────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 1, data: { service: 'payment-service', version: '1.0.0' }, message: 'OK' });
+});
+
+app.get('/db-check', async (_req, res) => {
+  try {
+    await globalSequelize.authenticate();
+    res.json({ status: 1, message: 'Connected to ShikshaPrime MySQL successfully', host: config.db.host, database: config.db.database });
+  } catch (err: any) {
+    res.status(500).json({ status: 0, message: 'Database connection failed', error: err.message });
+  }
 });
 
 app.use(errorMiddleware);

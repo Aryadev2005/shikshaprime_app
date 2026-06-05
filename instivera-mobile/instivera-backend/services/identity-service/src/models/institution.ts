@@ -1,3 +1,5 @@
+// This table needs to be created in shikshaprime_main - see seed below:
+// services/identity-service/migrations/create_institutions.sql
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
 export interface InstitutionAttributes {

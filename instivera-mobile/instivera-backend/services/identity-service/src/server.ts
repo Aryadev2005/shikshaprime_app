@@ -1,7 +1,7 @@
 import express from 'express';
 import { json } from 'body-parser';
 import config from './config';
-import { initializeDatabase, closeDatabase } from './db';
+import { initializeDatabase, closeDatabase, globalSequelize } from './db';
 import { setupRoutes } from './routes';
 import { authMiddleware } from './middleware/auth-middleware';
 import { errorMiddleware } from './middleware/error-middleware';
@@ -12,6 +12,25 @@ const app = express();
 // Middleware
 app.use(json());
 app.use(authMiddleware);
+
+// DB connection check endpoint
+app.get('/db-check', async (_req, res) => {
+  try {
+    await globalSequelize.authenticate();
+    res.json({
+      status: 1,
+      message: 'Connected to ShikshaPrime MySQL successfully',
+      host: config.db.host,
+      database: config.db.name,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      status: 0,
+      message: 'Database connection failed',
+      error: err.message,
+    });
+  }
+});
 
 // Setup routes
 setupRoutes(app);
