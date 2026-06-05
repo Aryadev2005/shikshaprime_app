@@ -14,38 +14,38 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TOKENS } from '../../theme/tokens';
 import { useAuthStore } from '../../store/authStore';
+import { AuthStackParamList } from '../../navigation/types';
 
-type AuthStackParamList = {
-  Login: undefined;
-  OTP: { email: string };
-};
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;
-
-export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [tenant] = useState('collegea'); // Default tenant
 
-  const { login, isLoading } = useAuthStore();
+  const { login, isLoading, setSelectedInstitution } = useAuthStore();
+
+  // Pull institution info from route params, fall back to defaults
+  const tenant = route.params?.tenant ?? 'collegea';
+  const institutionName = route.params?.institutionName ?? tenant;
+  const institutionType = route.params?.institutionType ?? 'college';
 
   const handleLogin = useCallback(async () => {
     if (!username || !password) {
       setError('Please enter both username and password');
       return;
     }
-
     setError('');
     try {
+      // Persist institution before login so it's available after hydration
+      await setSelectedInstitution({ tenant, name: institutionName, type: institutionType });
       await login(username, password, tenant);
-      // Navigation handled by root navigator based on auth state
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please try again.';
-      setError(errorMessage);
+      const msg = err instanceof Error ? err.message : 'Login failed. Please try again.';
+      setError(msg);
     }
-  }, [username, password, tenant, login]);
+  }, [username, password, tenant, institutionName, institutionType, login, setSelectedInstitution]);
 
   return (
     <KeyboardAvoidingView
@@ -59,18 +59,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         </View>
 
         <View style={styles.formContainer}>
+          {/* Institution display */}
           <View style={styles.institutionField}>
-            <MaterialCommunityIcons
-              name="school"
-              size={24}
-              color={TOKENS.coral}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Institution"
-              value={tenant}
-              editable={false}
-            />
+            <MaterialCommunityIcons name="school" size={24} color={TOKENS.coral} />
+            <Text style={styles.institutionText}>{institutionName}</Text>
           </View>
 
           <View style={styles.field}>
@@ -124,11 +116,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <ActivityIndicator color={TOKENS.paper} />
             ) : (
               <>
-                <MaterialCommunityIcons
-                  name="fingerprint"
-                  size={24}
-                  color={TOKENS.paper}
-                />
+                <MaterialCommunityIcons name="fingerprint" size={24} color={TOKENS.paper} />
                 <Text style={styles.signInButtonText}>Sign In</Text>
               </>
             )}
@@ -139,6 +127,26 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             disabled={isLoading}
           >
             <Text style={styles.otpLink}>Sign In with OTP</Text>
+          </TouchableOpacity>
+
+          {/* ── New links ─────────────────────────── */}
+          <View style={styles.divider} />
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('SignUp', { tenant, institutionName, institutionType })
+            }
+            disabled={isLoading}
+          >
+            <Text style={styles.registerLink}>New student? Register here</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.navigate('RegistrationStatus', {})}
+            disabled={isLoading}
+            style={styles.trackBtn}
+          >
+            <Text style={styles.trackLink}>Track existing application</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -183,6 +191,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: TOKENS.coralTint,
     borderRadius: 12,
+    gap: 12,
+  },
+  institutionText: {
+    flex: 1,
+    fontSize: 16,
+    color: TOKENS.ink,
+    fontWeight: '600',
   },
   field: {
     marginBottom: 20,
@@ -194,10 +209,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    flex: 1,
-    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: TOKENS.line,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     fontSize: 16,
     color: TOKENS.ink,
+    backgroundColor: TOKENS.surface,
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -234,20 +253,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    gap: 8,
   },
-  signInButtonDisabled: {
-    opacity: 0.6,
-  },
+  signInButtonDisabled: { opacity: 0.6 },
   signInButtonText: {
     color: TOKENS.paper,
     fontSize: 16,
     fontWeight: '700',
-    marginLeft: 8,
   },
   otpLink: {
     textAlign: 'center',
     color: TOKENS.plum500,
     fontSize: 14,
     fontWeight: '600',
+    paddingVertical: 4,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: TOKENS.line,
+    marginVertical: 16,
+  },
+  registerLink: {
+    textAlign: 'center',
+    color: TOKENS.coral,
+    fontSize: 14,
+    fontWeight: '600',
+    paddingVertical: 4,
+  },
+  trackBtn: {
+    marginTop: 8,
+  },
+  trackLink: {
+    textAlign: 'center',
+    color: TOKENS.ink3,
+    fontSize: 13,
+    paddingVertical: 4,
   },
 });

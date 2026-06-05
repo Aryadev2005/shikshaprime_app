@@ -19,7 +19,7 @@ const forwardGet = async (
     const response = await axios.get(`${config.noticeServiceUrl}${path}`, {
       headers: {
         Authorization: req.headers.authorization ?? '',
-        'x-tenant': req.headers['x-tenant'] ?? '',
+        'x-tenant': (req.headers as Record<string, string | string[] | undefined>)['x-tenant'] ?? '',
       },
       params,
     });

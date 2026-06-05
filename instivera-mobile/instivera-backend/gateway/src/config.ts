@@ -16,8 +16,10 @@ interface Config {
   noticeServiceUrl: string;
 }
 
+const env = process.env as Record<string, string | undefined>;
+
 const loadConfig = (): Config => {
-  const jwtSecret = process.env.JWT_SECRET;
+  const jwtSecret = env['JWT_SECRET'];
   if (!jwtSecret) {
     throw new Error(
       'JWT_SECRET environment variable is required. Please set it before starting the service.',
@@ -25,17 +27,17 @@ const loadConfig = (): Config => {
   }
 
   return {
-    port: parseInt(process.env.PORT || '4000', 10),
-    nodeEnv: process.env.NODE_ENV || 'development',
+    port: parseInt(env['PORT'] || '4000', 10),
+    nodeEnv: env['NODE_ENV'] || 'development',
     jwtSecret,
-    logLevel: process.env.LOG_LEVEL || 'info',
-    identityServiceUrl: process.env.IDENTITY_SERVICE_URL || 'http://localhost:9050',
-    studentServiceUrl: process.env.STUDENT_SERVICE_URL || 'http://localhost:9051',
-    paymentServiceUrl: process.env.PAYMENT_SERVICE_URL || 'http://localhost:9053',
-    teacherServiceUrl: process.env.TEACHER_SERVICE_URL || 'http://localhost:9060',
-    chatServiceUrl: process.env.CHAT_SERVICE_URL || 'http://localhost:9055',
-    feesServiceUrl: process.env.FEES_SERVICE_URL || 'http://localhost:9056',
-    noticeServiceUrl: process.env.NOTICE_SERVICE_URL || 'http://localhost:9057',
+    logLevel: env['LOG_LEVEL'] || 'info',
+    identityServiceUrl: env['IDENTITY_SERVICE_URL'] || 'http://localhost:9050',
+    studentServiceUrl: env['STUDENT_SERVICE_URL'] || 'http://localhost:9051',
+    paymentServiceUrl: env['PAYMENT_SERVICE_URL'] || 'http://localhost:9053',
+    teacherServiceUrl: env['TEACHER_SERVICE_URL'] || 'http://localhost:9060',
+    chatServiceUrl: env['CHAT_SERVICE_URL'] || 'http://localhost:9055',
+    feesServiceUrl: env['FEES_SERVICE_URL'] || 'http://localhost:9056',
+    noticeServiceUrl: env['NOTICE_SERVICE_URL'] || 'http://localhost:9057',
   };
 };
 

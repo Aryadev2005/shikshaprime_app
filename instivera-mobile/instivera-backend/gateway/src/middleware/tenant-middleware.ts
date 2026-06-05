@@ -6,7 +6,9 @@ export const tenantMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
-  const tenant = req.headers['x-tenant'] as string | undefined || req.query.tenant as string | undefined;
+  const headers = req.headers as Record<string, string | string[] | undefined>;
+  const rawTenant = headers['x-tenant'];
+  const tenant = (Array.isArray(rawTenant) ? rawTenant[0] : rawTenant) ?? (req.query['tenant'] as string | undefined);
 
   if (!tenant) {
     sendError(res, 400, 'x-tenant header is required');

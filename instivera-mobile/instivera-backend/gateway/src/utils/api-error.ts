@@ -8,6 +8,9 @@ export class ApiError extends Error {
     this.isOperational = isOperational;
 
     Object.setPrototypeOf(this, new.target.prototype);
-    Error.captureStackTrace(this, this.constructor);
+    if (typeof (Error as unknown as Record<string, unknown>)['captureStackTrace'] === 'function') {
+      (Error as unknown as { captureStackTrace: (t: object, c: object) => void })
+        .captureStackTrace(this, this.constructor);
+    }
   }
 }

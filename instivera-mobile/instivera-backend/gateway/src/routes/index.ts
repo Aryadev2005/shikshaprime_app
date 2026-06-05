@@ -6,6 +6,7 @@ import { createAssignmentRoutes } from './assignment.routes';
 import { createPaymentRoutes } from './payment.routes';
 import { createChatRoutes } from './chat.routes';
 import { createNoticeRoutes } from './notice.routes';
+import { createRegistrationRoutes } from './registration.routes';
 
 export const createMasterRouter = (): Router => {
   const router = Router();
@@ -45,6 +46,10 @@ export const createMasterRouter = (): Router => {
   // Notice routes (proxied to notice-service)
   const noticeRoutes = createNoticeRoutes();
   router.use('/', noticeRoutes);
+
+  // Registration routes — PUBLIC (no auth middleware)
+  const registrationRoutes = createRegistrationRoutes();
+  router.use('/registration', registrationRoutes);
 
   return router;
 };

@@ -16,7 +16,7 @@ const forward = async (
       url: `${config.chatServiceUrl}${path}`,
       headers: {
         Authorization: req.headers.authorization ?? '',
-        'x-tenant': req.headers['x-tenant'] ?? '',
+        'x-tenant': (req.headers as Record<string, string | string[] | undefined>)['x-tenant'] ?? '',
         'Content-Type': 'application/json',
       },
       data: method !== 'get' ? req.body : undefined,

@@ -1,5 +1,13 @@
 import { ClassStudent, AttendanceStatus } from '../types/attendance';
 
+export type AuthStackParamList = {
+  Login: { tenant?: string; institutionName?: string; institutionType?: 'school' | 'college' } | undefined;
+  OTP: { email: string };
+  SignUp: { tenant: string; institutionName: string; institutionType: 'school' | 'college' };
+  RegistrationSuccess: { regId: string; institutionName: string };
+  RegistrationStatus: { regId?: string };
+};
+
 export type AttendanceStackParamList = {
   StudentAttendance: undefined;
   TeacherHome: undefined;
