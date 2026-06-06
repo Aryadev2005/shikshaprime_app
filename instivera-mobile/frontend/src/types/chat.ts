@@ -39,3 +39,9 @@ export interface CreateDirectPayload {
   targetUserId: number;
   targetUserType: string;
 }
+
+export interface UserSearchResult {
+  id: number;
+  name: string;
+  role: 'student' | 'teacher';
+}

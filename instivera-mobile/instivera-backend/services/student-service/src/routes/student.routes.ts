@@ -7,6 +7,9 @@ import { handleAssignmentUpload } from '../middleware/upload.middleware';
 
 const router = Router();
 
+// ── Search ────────────────────────────────────────────────────────────────
+router.get('/search', requireAuth, studentController.searchStudents);
+
 // ── Profile ───────────────────────────────────────────────────────────────
 router.get('/profile/:studentId', requireAuth, studentController.getProfile);
 

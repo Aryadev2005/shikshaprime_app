@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { getTenantModels } from '../models';
 import { StudentProfile } from '../types/student.types';
 
@@ -34,5 +35,19 @@ export class StudentService {
         code: student.department.code
       } : undefined
     };
+  }
+
+  async searchStudents(query: string, tenant: string) {
+    const { Student } = getTenantModels(tenant);
+    const rows: any[] = await (Student as any).findAll({
+      where: { student_name: { [Op.like]: `%${query}%` } },
+      attributes: ['id', 'user_id', 'student_name'],
+      limit: 30,
+    });
+    return rows.map((s) => ({
+      id: s.user_id ?? s.id,
+      name: s.student_name ?? '',
+      role: 'student' as const,
+    }));
   }
 }

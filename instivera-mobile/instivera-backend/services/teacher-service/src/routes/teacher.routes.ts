@@ -9,6 +9,12 @@ import {
 
 const router = Router();
 
+// ── Timetable ──────────────────────────────────────────────────────────────
+router.get('/timetable', authMiddleware, teacherController.getTimetable);
+
+// ── Search ────────────────────────────────────────────────────────────────
+router.get('/search', authMiddleware, teacherController.searchTeachers);
+
 // ── Profile & classes ─────────────────────────────────────────────────────
 router.get('/profile/:teacherId', authMiddleware, teacherController.getProfile);
 router.get('/classes', authMiddleware, teacherController.getMyClasses);

@@ -36,10 +36,18 @@ export type FeesStackParamList = {
 export type ChatStackParamList = {
   Conversations: undefined;
   ChatRoom: { conversationId: number; name: string };
+  NewConversation: undefined;
 };
 
 export type CalendarStackParamList = {
   Calendar: undefined;
+  AttendanceTaker: { classId: string; date: string; className?: string };
+  AttendanceReview: {
+    students: ClassStudent[];
+    markings: Record<string, AttendanceStatus>;
+    date: string;
+    classId: string;
+  };
 };
 
 export type ProfileStackParamList = {
@@ -49,6 +57,11 @@ export type ProfileStackParamList = {
 export type NoticesStackParamList = {
   NoticeList: undefined;
   NoticeDetail: { id: string; title: string };
+};
+
+export type RepositoryStackParamList = {
+  RepositoryCategories: undefined;
+  RepositoryFiles: { categoryId: string; name: string };
 };
 
 /** @deprecated use AttendanceStackParamList */

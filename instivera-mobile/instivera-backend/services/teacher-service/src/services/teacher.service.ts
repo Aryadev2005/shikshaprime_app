@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { getTenantModels } from '../models';
 
 export class TeacherService {
@@ -71,6 +72,58 @@ export class TeacherService {
       academic_year_id: a.academic_year_id,
       class: a.class ? { id: a.class.id, name: a.class.name, code: a.class.code } : null,
       subject: a.subject ? { id: a.subject.id, name: a.subject.name, code: a.subject.code } : null,
+    }));
+  }
+
+  async getTimetable(employeeId: string, tenant: string) {
+    const { Teacher, TeacherClass, Class, Subject } = getTenantModels(tenant);
+
+    const teacher = await (Teacher as any).findOne({
+      where: { employee_id: employeeId },
+      attributes: ['id', 'first_name', 'last_name'],
+    });
+    if (!teacher) return [];
+
+    const assignments: any[] = await (TeacherClass as any).findAll({
+      where: { teacher_id: teacher.id, is_active: 1 },
+      include: [
+        { model: Class, as: 'class', attributes: ['id', 'name', 'code'] },
+        { model: Subject, as: 'subject', attributes: ['id', 'name'] },
+      ],
+    });
+
+    const SLOT_TIMES = ['09:00', '10:30', '12:00', '13:30', '15:00', '16:30'];
+    const TONES = ['plum', 'coral', 'green', 'amber'] as const;
+    const teacherName = `${teacher.first_name} ${teacher.last_name}`.trim();
+
+    return assignments.slice(0, SLOT_TIMES.length).map((a, i) => ({
+      time: SLOT_TIMES[i],
+      duration: '1h',
+      subject: a.subject?.name ?? 'Class',
+      room: a.class ? `${a.class.name}` : '—',
+      teacher: teacherName,
+      classId: String(a.class_id),
+      tone: TONES[i % TONES.length],
+      isActive: false,
+    }));
+  }
+
+  async searchTeachers(query: string, tenant: string) {
+    const { Teacher } = getTenantModels(tenant);
+    const rows: any[] = await (Teacher as any).findAll({
+      where: {
+        [Op.or]: [
+          { first_name: { [Op.like]: `%${query}%` } },
+          { last_name: { [Op.like]: `%${query}%` } },
+        ],
+      },
+      attributes: ['id', 'user_id', 'first_name', 'last_name'],
+      limit: 30,
+    });
+    return rows.map((t) => ({
+      id: t.user_id ?? t.id,
+      name: `${t.first_name} ${t.last_name}`.trim(),
+      role: 'teacher' as const,
     }));
   }
 }

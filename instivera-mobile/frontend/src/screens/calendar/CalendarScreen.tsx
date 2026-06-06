@@ -4,29 +4,23 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   StyleSheet,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TOKENS } from '../../theme/tokens';
 import { Pill, Avatar } from '../../components/ui';
+import { useTimetable } from '../../hooks/useTimetable';
+import { TimetableEvent } from '../../api/modules/timetable.api';
+import { CalendarStackParamList } from '../../navigation/types';
 
-// TODO: wire to timetable API
+type Props = NativeStackScreenProps<CalendarStackParamList, 'Calendar'>;
 
-// ─── Static timetable data ────────────────────────────────────────────────────
+// ─── Static timetable fallback ────────────────────────────────────────────────
 
 type Tone = 'plum' | 'coral' | 'green' | 'amber';
-
-interface TimetableEvent {
-  time: string;
-  duration: string;
-  subject: string;
-  room: string;
-  teacher: string;
-  tone: Tone;
-  isActive?: boolean;
-  isDeadline?: boolean;
-}
 
 const STATIC_SCHEDULE: TimetableEvent[] = [
   {
@@ -35,6 +29,7 @@ const STATIC_SCHEDULE: TimetableEvent[] = [
     subject: 'Mathematics',
     room: 'Room 204',
     teacher: 'John Doe',
+    classId: 'CLS-1A',
     tone: 'plum',
     isActive: true,
   },
@@ -44,6 +39,7 @@ const STATIC_SCHEDULE: TimetableEvent[] = [
     subject: 'Physics Lab',
     room: 'Block C',
     teacher: 'S. Mehta',
+    classId: 'CLS-2B',
     tone: 'coral',
   },
   {
@@ -52,6 +48,7 @@ const STATIC_SCHEDULE: TimetableEvent[] = [
     subject: 'English Lit',
     room: 'Room 109',
     teacher: 'P. Nair',
+    classId: 'CLS-3A',
     tone: 'green',
   },
   {
@@ -60,12 +57,13 @@ const STATIC_SCHEDULE: TimetableEvent[] = [
     subject: 'Essay Deadline',
     room: 'History · Submit',
     teacher: '',
+    classId: '',
     tone: 'amber',
     isDeadline: true,
   },
 ];
 
-// ─── Week strip ───────────────────────────────────────────────────────────────
+// ─── Week strip helpers ───────────────────────────────────────────────────────
 
 const getMondayOfWeek = (date: Date): Date => {
   const d = new Date(date);
@@ -77,7 +75,14 @@ const getMondayOfWeek = (date: Date): Date => {
 
 const DAY_ABBRS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// ─── Timeline row ─────────────────────────────────────────────────────────────
+const toDateString = (d: Date): string =>
+  [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
+
+// ─── Tone maps ────────────────────────────────────────────────────────────────
 
 const TONE_BG: Record<Tone, string> = {
   plum: TOKENS.plumTint,
@@ -92,12 +97,16 @@ const TONE_COLOR: Record<Tone, string> = {
   amber: TOKENS.amber,
 };
 
-const TimeRow: React.FC<{ event: TimetableEvent; isLast: boolean }> = ({
-  event,
-  isLast,
-}) => {
-  const c = TONE_COLOR[event.tone];
-  const bg = TONE_BG[event.tone];
+// ─── Timeline row ─────────────────────────────────────────────────────────────
+
+const TimeRow: React.FC<{
+  event: TimetableEvent;
+  isLast: boolean;
+  onTakeAttendance: () => void;
+}> = ({ event, isLast, onTakeAttendance }) => {
+  const tone = (event.tone ?? 'plum') as Tone;
+  const c = TONE_COLOR[tone];
+  const bg = TONE_BG[tone];
 
   return (
     <View style={styles.timeRow}>
@@ -109,7 +118,7 @@ const TimeRow: React.FC<{ event: TimetableEvent; isLast: boolean }> = ({
 
       {/* Timeline dot + line */}
       <View style={styles.timelineCol}>
-        {!isLast && <View style={[styles.timelineLine]} />}
+        {!isLast && <View style={styles.timelineLine} />}
         <View style={[styles.timelineDot, { backgroundColor: c }]} />
       </View>
 
@@ -152,12 +161,14 @@ const TimeRow: React.FC<{ event: TimetableEvent; isLast: boolean }> = ({
                 <Text style={styles.avatarOverflowText}>+39</Text>
               </View>
             </View>
-            {event.isActive && (
-              <View style={[styles.attendanceBtn, { backgroundColor: c }]}>
-                <Text style={styles.attendanceBtnText}>Take attendance</Text>
-                <MaterialCommunityIcons name="arrow-right" size={11} color="#fff" />
-              </View>
-            )}
+            <TouchableOpacity
+              style={[styles.attendanceBtn, { backgroundColor: c }]}
+              onPress={onTakeAttendance}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.attendanceBtnText}>Take attendance</Text>
+              <MaterialCommunityIcons name="arrow-right" size={11} color="#fff" />
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -167,10 +178,15 @@ const TimeRow: React.FC<{ event: TimetableEvent; isLast: boolean }> = ({
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
-export const CalendarScreen: React.FC = () => {
+export const CalendarScreen: React.FC<Props> = ({ navigation }) => {
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const monday = getMondayOfWeek(selectedDate);
+
+  const dateStr = toDateString(selectedDate);
+  const { data: apiEvents } = useTimetable(dateStr);
+  const events: TimetableEvent[] =
+    apiEvents && apiEvents.length > 0 ? apiEvents : STATIC_SCHEDULE;
 
   // Build week days
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -179,10 +195,8 @@ export const CalendarScreen: React.FC = () => {
     return d;
   });
 
-  const isToday = (d: Date) =>
-    d.toDateString() === today.toDateString();
-  const isSelected = (d: Date) =>
-    d.toDateString() === selectedDate.toDateString();
+  const isToday = (d: Date) => d.toDateString() === today.toDateString();
+  const isSelected = (d: Date) => d.toDateString() === selectedDate.toDateString();
 
   const selectedLabel = selectedDate.toLocaleDateString('en-IN', {
     weekday: 'long',
@@ -203,6 +217,15 @@ export const CalendarScreen: React.FC = () => {
   };
 
   const monthLabel = monday.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+
+  const handleTakeAttendance = (event: TimetableEvent) => {
+    if (!event.classId) return;
+    navigation.navigate('AttendanceTaker', {
+      classId: event.classId,
+      date: dateStr,
+      className: event.subject,
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -241,12 +264,7 @@ export const CalendarScreen: React.FC = () => {
                 onPress={() => setSelectedDate(d)}
                 activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.dayAbbr,
-                    selected && styles.dayAbbrSelected,
-                  ]}
-                >
+                <Text style={[styles.dayAbbr, selected && styles.dayAbbrSelected]}>
                   {DAY_ABBRS[i]}
                 </Text>
                 <Text
@@ -258,7 +276,6 @@ export const CalendarScreen: React.FC = () => {
                 >
                   {d.getDate()}
                 </Text>
-                {/* Event dots */}
                 <View style={styles.dayDots}>
                   {i < 5 &&
                     Array.from({ length: Math.min(i % 3 + 1, 3) }).map((_, j) => (
@@ -284,7 +301,10 @@ export const CalendarScreen: React.FC = () => {
       <View style={styles.dayHeader}>
         <View>
           <Text style={styles.dayHeaderDate}>{selectedLabel}</Text>
-          <Text style={styles.dayHeaderSub}>3 classes · 1 deadline · Sports practice</Text>
+          <Text style={styles.dayHeaderSub}>
+            {events.filter((e) => !e.isDeadline).length} classes ·{' '}
+            {events.filter((e) => e.isDeadline).length} deadline
+          </Text>
         </View>
       </View>
 
@@ -293,8 +313,13 @@ export const CalendarScreen: React.FC = () => {
         contentContainerStyle={styles.timeline}
         showsVerticalScrollIndicator={false}
       >
-        {STATIC_SCHEDULE.map((event, i) => (
-          <TimeRow key={i} event={event} isLast={i === STATIC_SCHEDULE.length - 1} />
+        {events.map((event, i) => (
+          <TimeRow
+            key={i}
+            event={event}
+            isLast={i === events.length - 1}
+            onTakeAttendance={() => handleTakeAttendance(event)}
+          />
         ))}
         <View style={{ height: 110 }} />
       </ScrollView>

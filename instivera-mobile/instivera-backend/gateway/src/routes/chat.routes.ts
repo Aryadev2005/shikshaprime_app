@@ -3,6 +3,8 @@ import axios from 'axios';
 import { requireAuth } from '../middleware/auth-middleware';
 import config from '../config';
 
+type UserSearchResult = { id: number; name: string; role: 'student' | 'teacher' };
+
 const forward = async (
   req: Request,
   res: Response,
@@ -58,6 +60,39 @@ export const createChatRoutes = (): Router => {
   router.put('/conversations/:id/read', requireAuth, (req, res, next) =>
     forward(req, res, next, 'put', `/chat/conversations/${req.params.id}/read`),
   );
+
+  router.get('/users/search', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    const q = (req.query.q as string || '').trim();
+    const role = req.query.role as string | undefined;
+    const headers = {
+      Authorization: req.headers.authorization ?? '',
+      'x-tenant': (req.headers as Record<string, string | string[] | undefined>)['x-tenant'] ?? '',
+    };
+
+    try {
+      const fetchers: Promise<UserSearchResult[]>[] = [];
+
+      if (!role || role === 'student') {
+        fetchers.push(
+          axios.get(`${config.studentServiceUrl}/students/search`, { headers, params: { q } })
+            .then((r) => r.data?.data ?? [])
+            .catch(() => [])
+        );
+      }
+      if (!role || role === 'teacher') {
+        fetchers.push(
+          axios.get(`${config.teacherServiceUrl}/teachers/search`, { headers, params: { q } })
+            .then((r) => r.data?.data ?? [])
+            .catch(() => [])
+        );
+      }
+
+      const results = (await Promise.all(fetchers)).flat();
+      res.json({ status: 1, data: results, message: 'Search results' });
+    } catch (err) {
+      next(err);
+    }
+  });
 
   return router;
 };

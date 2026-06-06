@@ -27,9 +27,12 @@ import { CalendarScreen } from '../screens/calendar/CalendarScreen';
 import { StudentHubScreen } from '../screens/students/StudentHubScreen';
 import { ChatConversationsScreen } from '../screens/chat/ChatConversationsScreen';
 import { ChatRoomScreen } from '../screens/chat/ChatRoomScreen';
+import { NewConversationScreen } from '../screens/chat/NewConversationScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { NoticeListScreen } from '../screens/notices/NoticeListScreen';
 import { NoticeDetailScreen } from '../screens/notices/NoticeDetailScreen';
+import { RepositoryCategoriesScreen } from '../screens/repository/RepositoryCategoriesScreen';
+import { RepositoryFilesScreen } from '../screens/repository/RepositoryFilesScreen';
 import {
   AttendanceStackParamList,
   AssignmentsStackParamList,
@@ -38,6 +41,7 @@ import {
   CalendarStackParamList,
   ProfileStackParamList,
   NoticesStackParamList,
+  RepositoryStackParamList,
 } from './types';
 
 // ─── Stack navigators ─────────────────────────────────────────────────────────
@@ -49,6 +53,7 @@ const ChatStack = createNativeStackNavigator<ChatStackParamList>();
 const CalendarStack = createNativeStackNavigator<CalendarStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const NoticesStack = createNativeStackNavigator<NoticesStackParamList>();
+const RepositoryStack = createNativeStackNavigator<RepositoryStackParamList>();
 
 type RootStackParamList = { Auth: undefined };
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -194,12 +199,15 @@ const ChatStackScreen: React.FC = () => (
   <ChatStack.Navigator screenOptions={{ headerShown: false }}>
     <ChatStack.Screen name="Conversations" component={ChatConversationsScreen} />
     <ChatStack.Screen name="ChatRoom" component={ChatRoomScreen} />
+    <ChatStack.Screen name="NewConversation" component={NewConversationScreen} />
   </ChatStack.Navigator>
 );
 
 const CalendarStackScreen: React.FC = () => (
   <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
     <CalendarStack.Screen name="Calendar" component={CalendarScreen} />
+    <CalendarStack.Screen name="AttendanceTaker" component={AttendanceTakerScreen as React.ComponentType} />
+    <CalendarStack.Screen name="AttendanceReview" component={AttendanceReviewScreen as React.ComponentType} />
   </CalendarStack.Navigator>
 );
 
@@ -216,6 +224,13 @@ const NoticesStackScreen: React.FC = () => (
   </NoticesStack.Navigator>
 );
 
+const RepositoryStackScreen: React.FC = () => (
+  <RepositoryStack.Navigator screenOptions={{ headerShown: false }}>
+    <RepositoryStack.Screen name="RepositoryCategories" component={RepositoryCategoriesScreen} />
+    <RepositoryStack.Screen name="RepositoryFiles" component={RepositoryFilesScreen} />
+  </RepositoryStack.Navigator>
+);
+
 // ─── Bottom tab navigator ─────────────────────────────────────────────────────
 
 type TabParamList = {
@@ -225,6 +240,7 @@ type TabParamList = {
   Chat: undefined;
   Calendar: undefined;
   Notices: undefined;
+  Library: undefined;
   Profile: undefined;
 };
 
@@ -239,6 +255,7 @@ const TAB_ICONS_INACTIVE: TabIconMap = {
   Chat: 'chat-outline',
   Calendar: 'calendar-month-outline',
   Notices: 'bell-outline',
+  Library: 'bookshelf',
   Profile: 'account-circle-outline',
 };
 
@@ -249,6 +266,7 @@ const TAB_ICONS_ACTIVE: TabIconMap = {
   Chat: 'chat',
   Calendar: 'calendar-month',
   Notices: 'bell',
+  Library: 'book-open-variant',
   Profile: 'account-circle',
 };
 
@@ -310,6 +328,13 @@ const MainTabs: React.FC<{ token: string }> = ({ token }) => {
         component={NoticesStackScreen}
         options={{ title: 'Notices' }}
       />
+      {role === 'student' && (
+        <Tab.Screen
+          name="Library"
+          component={RepositoryStackScreen}
+          options={{ title: 'Library' }}
+        />
+      )}
       <Tab.Screen
         name="Profile"
         component={ProfileStackScreen}

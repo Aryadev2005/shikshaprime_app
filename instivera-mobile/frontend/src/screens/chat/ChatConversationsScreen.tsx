@@ -211,7 +211,10 @@ export const ChatConversationsScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity style={styles.headerBtn}>
             <MaterialCommunityIcons name="magnify" size={17} color={TOKENS.ink} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.composeBtn}>
+          <TouchableOpacity
+            style={styles.composeBtn}
+            onPress={() => navigation.navigate('NewConversation')}
+          >
             <MaterialCommunityIcons name="pencil" size={17} color="#fff" />
           </TouchableOpacity>
         </View>

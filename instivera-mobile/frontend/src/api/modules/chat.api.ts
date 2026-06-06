@@ -3,6 +3,7 @@ import {
   Conversation,
   Message,
   CreateDirectPayload,
+  UserSearchResult,
 } from '../../types/chat';
 
 const client = apiClient.getClient();
@@ -44,5 +45,10 @@ export const chatApi = {
 
   markAsRead: async (conversationId: number): Promise<void> => {
     await client.put(`/chat/conversations/${conversationId}/read`);
+  },
+
+  searchUsers: async (query: string, role?: string): Promise<UserSearchResult[]> => {
+    const res = await client.get('/chat/users/search', { params: { q: query, ...(role ? { role } : {}) } });
+    return res.data?.data ?? res.data ?? [];
   },
 };

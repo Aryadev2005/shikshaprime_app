@@ -41,3 +41,11 @@ export const getAttendanceSummary = asyncHandler(async (req: Request, res: Respo
   const summary = await attendanceService.getAttendanceSummary(user.user_code || user.id, tenant);
   sendSuccess(res, summary, 'Attendance summary retrieved successfully');
 });
+
+export const searchStudents = asyncHandler(async (req: Request, res: Response) => {
+  const tenant = req.tenant as string;
+  const q = (req.query.q as string || '').trim();
+  if (q.length < 2) return sendError(res, 400, 'Query must be at least 2 characters');
+  const results = await studentService.searchStudents(q, tenant);
+  sendSuccess(res, results, 'Search results');
+});

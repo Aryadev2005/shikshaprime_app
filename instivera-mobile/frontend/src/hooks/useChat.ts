@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { chatApi } from '../api/modules/chat.api';
 import { CreateDirectPayload } from '../types/chat';
@@ -48,3 +49,29 @@ export const useCreateDirect = () =>
       // Refresh conversation list after creating a new direct chat
     },
   });
+
+export const useUserSearch = (query: string, role?: string) => {
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  return useQuery({
+    queryKey: ['chat', 'userSearch', debouncedQuery, role],
+    queryFn: () => chatApi.searchUsers(debouncedQuery, role),
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 60_000,
+  });
+};
+
+export const useCreateDirectConversation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateDirectPayload) => chatApi.createDirect(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CHAT_KEYS.conversations });
+    },
+  });
+};
