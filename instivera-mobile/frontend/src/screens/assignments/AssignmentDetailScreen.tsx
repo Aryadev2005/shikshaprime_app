@@ -8,6 +8,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -266,7 +267,7 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ route, navigation }) =
   const isSubmitted = data.status === 'SUBMITTED' || data.status === 'GRADED';
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -395,7 +396,7 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ route, navigation }) =
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

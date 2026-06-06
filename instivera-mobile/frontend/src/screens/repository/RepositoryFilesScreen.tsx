@@ -8,6 +8,7 @@ import {
   Linking,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { TOKENS } from '../../theme/tokens';
@@ -102,7 +103,7 @@ export const RepositoryFilesScreen: React.FC<Props> = ({ route, navigation }) =>
   const files: RepositoryFile[] = data ?? [];
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -147,7 +148,7 @@ export const RepositoryFilesScreen: React.FC<Props> = ({ route, navigation }) =>
           ListFooterComponent={<View style={{ height: 60 }} />}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

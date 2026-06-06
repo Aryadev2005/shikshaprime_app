@@ -1,0 +1,28 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Environment files — NEVER commit these
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+
+# Expo
+.expo/

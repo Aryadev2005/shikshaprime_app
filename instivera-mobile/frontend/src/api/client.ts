@@ -1,8 +1,16 @@
+// TODO: Add SSL certificate pinning before production release.
+// Use react-native-ssl-pinning or expo-modules for this.
+// The production certificate SHA-256 fingerprint must be hardcoded here
+// to prevent MITM attacks. Example:
+//   fetch(url, { sslPinning: { certs: ['cert_fingerprint'] } })
+// Do NOT ship to App Store / Play Store without this.
+
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
+import { Alert } from 'react-native';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:4000/api/mobile';
+const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://127.0.0.1:4000/api/mobile';
 
 interface RefreshQueueItem {
   resolve: (token: string) => void;
@@ -42,14 +50,29 @@ class ApiClient {
       (response) => response,
       async (error: AxiosError) => {
         const originalRequest = error.config;
+        const status = error.response?.status;
 
-        if (error.response?.status === 401 && originalRequest) {
+        // 429 — server-side rate limit hit
+        if (status === 429) {
+          Alert.alert(
+            'Too Many Requests',
+            'You have made too many requests. Please wait a moment and try again.',
+          );
+          throw error;
+        }
+
+        // 403 — forbidden / insufficient permissions
+        if (status === 403) {
+          Alert.alert('Access Denied', 'You do not have permission to perform this action.');
+          throw error;
+        }
+
+        // 401 — unauthorised: clear credentials and let the caller handle navigation
+        if (status === 401 && originalRequest) {
           if (!this.isRefreshing) {
             this.isRefreshing = true;
 
             try {
-              // Note: implement refresh endpoint based on identity service
-              // For now, we'll clear auth and redirect to login
               await SecureStore.deleteItemAsync('accessToken');
               await SecureStore.deleteItemAsync('tenant');
 

@@ -6,12 +6,13 @@ export const env = process.env.NODE_ENV || 'development';
 const envFile = path.resolve(process.cwd(), `.env.${env}`);
 if (fs.existsSync(envFile)) {
   dotenv.config({ path: envFile });
-  console.log(`[identity-service] Loaded ${envFile}`);
 } else {
   dotenv.config();
 }
 
-console.log('[identity-service] DB_HOST=', process.env.DB_HOST);
+if (!process.env.JWT_SECRET) {
+  throw new Error('[identity-service] JWT_SECRET env var is required');
+}
 
 export const config = {
   env,
@@ -24,7 +25,7 @@ export const config = {
     pass: process.env.DB_PASSWORD!,
     name: process.env.DB_NAME!,
   },
-  jwt_secret: process.env.JWT_SECRET || 'mivdjh32hjfdgppkmdu8',
+  jwt_secret: process.env.JWT_SECRET,
   jwt_expires_in: process.env.JWT_EXPIRES_IN || '60d',
   smtp: {
     host: process.env.SMTP_HOST || 'smtp.zeptomail.in',

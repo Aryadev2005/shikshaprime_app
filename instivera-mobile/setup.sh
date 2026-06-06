@@ -37,13 +37,20 @@ cd "$BACKEND_DIR"
 
 if [ ! -f .env ]; then
     echo "📝 Creating .env file..."
-    cat > .env << 'EOF'
+    # Generate a random JWT secret
+    if command -v openssl &> /dev/null; then
+        GENERATED_JWT_SECRET=$(openssl rand -base64 48)
+    else
+        GENERATED_JWT_SECRET=$(node -e "console.log(require('crypto').randomBytes(48).toString('base64'))")
+    fi
+    echo "⚠️  A random JWT_SECRET has been generated. Save it securely."
+    cat > .env << EOF
 # Service Configuration
 PORT=4000
 NODE_ENV=development
 
 # JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-12345
+JWT_SECRET=${GENERATED_JWT_SECRET}
 
 # Upstream Services
 IDENTITY_SERVICE_URL=http://localhost:9050

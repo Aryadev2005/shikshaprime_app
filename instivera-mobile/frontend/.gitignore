@@ -30,12 +30,18 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# environment files — NEVER commit these
+.env
+.env.*
+!.env.example
+!.env.*.example
 
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# Native build artifacts (keep committed native source, ignore build outputs)
+/ios/Pods/
+/ios/build/
+/android/.gradle/
+/android/app/build/
+/android/build/

@@ -8,6 +8,7 @@ import {
   Linking,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { TOKENS } from '../../theme/tokens';
@@ -52,7 +53,7 @@ export const NoticeDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const date = formatDate(data.published_date ?? data.created_at);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -116,7 +117,7 @@ export const NoticeDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
         ) : null}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

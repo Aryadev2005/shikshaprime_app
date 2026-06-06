@@ -3,15 +3,37 @@
     "name": "INSTIVERA",
     "slug": "instivera-mobile",
     "version": "1.0.0",
+    "scheme": "instivera",
+    "platforms": ["ios", "android"],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "extra": {
-      "apiUrl": "http://localhost:4000/api/mobile"
+      "apiUrl": "http://127.0.0.1:4000/api/mobile"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.instivera.mobile"
+      "bundleIdentifier": "com.instivera.mobile",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "INSTIVERA needs access to your photos to upload profile pictures and assignment files.",
+        "NSCameraUsageDescription": "INSTIVERA needs camera access to capture photos.",
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "localhost": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            },
+            "127.0.0.1": {
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSIncludesSubdomains": true
+            }
+          }
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +47,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-document-picker"
+    ]
   }
 }

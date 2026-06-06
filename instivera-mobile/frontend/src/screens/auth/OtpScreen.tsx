@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TOKENS } from '../../theme/tokens';
 import { useAuthStore } from '../../store/authStore';
@@ -106,7 +107,7 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ route, navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.title}>Enter OTP</Text>
         <Text style={styles.subtitle}>We've sent a verification code to your email</Text>
@@ -198,7 +199,7 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ route, navigation }) => {
           <Text style={styles.backButtonText}>Back to Login</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

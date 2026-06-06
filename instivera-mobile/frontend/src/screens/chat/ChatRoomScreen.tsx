@@ -122,7 +122,7 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={88}
       >
         {/* Header */}
         <View style={styles.header}>

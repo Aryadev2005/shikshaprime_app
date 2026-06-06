@@ -10,6 +10,9 @@ import { verifyToken } from './middleware/auth-middleware';
 import { getTenantSequelize, globalSequelize } from './db';
 import { persistAndFormatMessage } from './services/message.service';
 import { MessageService } from './services/message.service';
+import { validateEnv } from './utils/validateEnv';
+
+validateEnv(['JWT_SECRET', 'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USERNAME', 'DB_PASSWORD']);
 
 // ── Express ──────────────────────────────────────────────────────────────────
 
@@ -167,5 +170,16 @@ io.on('connection', (socket: Socket) => {
 
 const PORT = config.port || 9058;
 httpServer.listen(PORT, () => {
-  console.log(`Chat service (REST + Socket.io) is running on http://localhost:${PORT}`);
+  console.log(`[chat-service] Running on port ${PORT}`);
+});
+
+process.on('SIGTERM', async () => {
+  io.close();
+  await globalSequelize.close();
+  process.exit(0);
+});
+process.on('SIGINT', async () => {
+  io.close();
+  await globalSequelize.close();
+  process.exit(0);
 });

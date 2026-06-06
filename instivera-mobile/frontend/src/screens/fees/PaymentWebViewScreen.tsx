@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -107,28 +108,28 @@ export const PaymentWebViewScreen: React.FC<Props> = ({ route, navigation }) => 
 
   if (state === 'opening') {
     return (
-      <View style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color={TOKENS.plum} />
         <Text style={styles.statusText}>Opening PhonePe…</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (state === 'polling') {
     return (
-      <View style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={['top', 'bottom']}>
         <ActivityIndicator size="large" color={TOKENS.plum} />
         <Text style={styles.statusText}>Confirming payment…</Text>
         <Text style={styles.subText}>
           Check {pollCount}/{MAX_POLLS}
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (state === 'success') {
     return (
-      <View style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={['top', 'bottom']}>
         <View style={styles.iconCircle}>
           <MaterialCommunityIcons name="check-bold" size={48} color={TOKENS.green} />
         </View>
@@ -138,13 +139,13 @@ export const PaymentWebViewScreen: React.FC<Props> = ({ route, navigation }) => 
         <TouchableOpacity style={styles.doneBtn} onPress={handleDone}>
           <Text style={styles.doneBtnText}>Done</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (state === 'failure') {
     return (
-      <View style={styles.centered}>
+      <SafeAreaView style={styles.centered} edges={['top', 'bottom']}>
         <View style={[styles.iconCircle, { backgroundColor: TOKENS.redTint }]}>
           <MaterialCommunityIcons name="close-thick" size={48} color={TOKENS.red} />
         </View>
@@ -153,13 +154,13 @@ export const PaymentWebViewScreen: React.FC<Props> = ({ route, navigation }) => 
         <TouchableOpacity style={[styles.doneBtn, { backgroundColor: TOKENS.red }]} onPress={handleDone}>
           <Text style={styles.doneBtnText}>Go Back</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
   // timeout
   return (
-    <View style={styles.centered}>
+    <SafeAreaView style={styles.centered} edges={['top', 'bottom']}>
       <View style={[styles.iconCircle, { backgroundColor: TOKENS.amberTint }]}>
         <MaterialCommunityIcons name="clock-alert-outline" size={48} color={TOKENS.amber} />
       </View>
@@ -170,7 +171,7 @@ export const PaymentWebViewScreen: React.FC<Props> = ({ route, navigation }) => 
       <TouchableOpacity style={[styles.doneBtn, { backgroundColor: TOKENS.amber }]} onPress={handleDone}>
         <Text style={styles.doneBtnText}>OK</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
 

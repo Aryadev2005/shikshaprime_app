@@ -5,6 +5,7 @@ import {
   handleAssignmentUpload,
   handleOptionalAssignmentUpload,
 } from '../middleware/upload.middleware';
+import { uploadLimiter } from '../middleware/rateLimiters';
 
 export const createAssignmentRoutes = (): Router => {
   const router = Router();
@@ -23,6 +24,7 @@ export const createAssignmentRoutes = (): Router => {
     '/submit',
     requireAuth,
     requireRole('student'),
+    uploadLimiter,
     handleAssignmentUpload,
     assignmentController.submitAssignment,
   );
@@ -32,6 +34,7 @@ export const createAssignmentRoutes = (): Router => {
     '/',
     requireAuth,
     requireRole('teacher'),
+    uploadLimiter,
     handleOptionalAssignmentUpload,
     assignmentController.createAssignment,
   );

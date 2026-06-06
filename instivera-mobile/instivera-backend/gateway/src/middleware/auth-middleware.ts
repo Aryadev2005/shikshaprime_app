@@ -4,6 +4,21 @@ import config from '../config';
 import { ApiError } from '../utils/api-error';
 import { JwtPayload } from '../types';
 
+const VALID_USER_TYPES = new Set(['teacher', 'student', 'admin']);
+const REQUIRED_FIELDS: (keyof JwtPayload)[] = ['user_id', 'username', 'role', 'user_code'];
+
+function assertPayload(payload: JwtPayload): void {
+  const missing = REQUIRED_FIELDS.filter(
+    (f) => payload[f] === undefined || payload[f] === null || payload[f] === '',
+  );
+  if (missing.length > 0) {
+    throw new ApiError(401, `Token missing required fields: ${missing.join(', ')}`);
+  }
+  if (!VALID_USER_TYPES.has(payload.user_type)) {
+    throw new ApiError(403, `Unknown user_type: ${payload.user_type}`);
+  }
+}
+
 export const requireAuth = (
   req: Request,
   _res: Response,
@@ -18,6 +33,8 @@ export const requireAuth = (
 
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;
+
+    assertPayload(decoded);
 
     req.user = decoded;
     req.token = token;

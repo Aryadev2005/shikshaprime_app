@@ -6,6 +6,9 @@ import { setupRoutes } from './routes';
 import { authMiddleware } from './middleware/auth-middleware';
 import { errorMiddleware } from './middleware/error-middleware';
 import { logger } from './utils/logger';
+import { validateEnv } from './utils/validateEnv';
+
+validateEnv(['JWT_SECRET', 'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USERNAME', 'DB_PASSWORD']);
 
 const app = express();
 

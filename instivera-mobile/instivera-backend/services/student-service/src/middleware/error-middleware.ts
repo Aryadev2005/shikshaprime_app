@@ -1,14 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 
-export const errorMiddleware = (err: any, req: Request, res: Response, next: NextFunction) => {
-    console.error(err.stack);
-    
-    const status = err.status || 500;
-    const message = err.message || 'Internal Server Error';
+export const errorMiddleware = (err: any, _req: Request, res: Response, _next: NextFunction) => {
+  const isProd = process.env.NODE_ENV === 'production';
+  const status = err.status || 500;
 
-    res.status(status).json({
-        status: 0,
-        data: null,
-        message: message,
-    });
+  if (!isProd) {
+    console.error(err.stack);
+  }
+
+  res.status(status).json({
+    status: 0,
+    data: null,
+    message: isProd && status >= 500 ? 'Internal server error' : err.message || 'Internal server error',
+  });
 };

@@ -8,7 +8,7 @@ const ALLOWED_MIME_TYPES = [
   'image/jpg',
   'image/png',
 ];
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -31,7 +31,7 @@ export const handleAssignmentUpload = (
   upload.single('assignmentFile')(req, res, (err: unknown) => {
     if (err instanceof multer.MulterError) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        next(new ApiError(400, 'File size exceeds 25 MB limit'));
+        next(new ApiError(400, 'File size exceeds 10 MB limit'));
         return;
       }
       next(new ApiError(400, err.message));

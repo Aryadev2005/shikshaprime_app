@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TOKENS } from '../../theme/tokens';
 import { useAuthStore } from '../../store/authStore';
 import { AuthStackParamList } from '../../navigation/types';
@@ -48,6 +49,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   }, [username, password, tenant, institutionName, institutionType, login, setSelectedInstitution]);
 
   return (
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
@@ -151,13 +153,17 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: TOKENS.plumTint,
+  },
+  container: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

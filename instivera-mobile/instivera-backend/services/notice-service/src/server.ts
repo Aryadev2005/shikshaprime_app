@@ -6,6 +6,9 @@ import noticeRoutes from './routes/notice.routes';
 import { errorMiddleware } from './middleware/error-middleware';
 import { tenantMiddleware } from './middleware/tenant-middleware';
 import { getTenantSequelize, globalSequelize } from './db';
+import { validateEnv } from './utils/validateEnv';
+
+validateEnv(['JWT_SECRET', 'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USERNAME', 'DB_PASSWORD']);
 
 const app = express();
 const server = createServer(app);
@@ -34,5 +37,14 @@ app.use(errorMiddleware);
 
 const PORT = config.port || 9057;
 server.listen(PORT, () => {
-  console.log(`Notice service is running on http://localhost:${PORT}`);
+  console.log(`[notice-service] Running on port ${PORT}`);
+});
+
+process.on('SIGTERM', async () => {
+  await globalSequelize.close();
+  process.exit(0);
+});
+process.on('SIGINT', async () => {
+  await globalSequelize.close();
+  process.exit(0);
 });

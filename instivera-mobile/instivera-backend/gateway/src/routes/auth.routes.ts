@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
+import { authLimiter } from '../middleware/rateLimiters';
 
 export const createAuthRoutes = (): Router => {
   const router = Router();
 
-  router.post('/login', authController.login);
-  router.post('/send-otp', authController.sendOtp);
-  router.post('/verify-otp', authController.verifyOtp);
-  router.post('/validate-email', authController.validateEmail);
+  router.post('/login', authLimiter, authController.login);
+  router.post('/send-otp', authLimiter, authController.sendOtp);
+  router.post('/verify-otp', authLimiter, authController.verifyOtp);
+  router.post('/validate-email', authLimiter, authController.validateEmail);
 
   return router;
 };
