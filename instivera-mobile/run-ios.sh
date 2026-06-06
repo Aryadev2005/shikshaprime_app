@@ -43,7 +43,7 @@ if [ ! -f "$BACKEND_GATEWAY_DIR/.env" ]; then
     exit 1
   fi
 fi
-
+lsof -ti :4000 | xargs kill -9 2>/dev/null || true
 # Start the BFF gateway in background
 echo ""
 echo "🚀 Starting BFF Gateway on port 4000..."
