@@ -28,45 +28,44 @@ echo "✅ CocoaPods: $(pod --version)"
 
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
-BACKEND_GATEWAY_DIR="$PROJECT_ROOT/instivera-backend/gateway"
+BACKEND_DIR="$PROJECT_ROOT/instivera-api"
 
 # Check for .env files
-if [ ! -f "$BACKEND_GATEWAY_DIR/.env" ]; then
+if [ ! -f "$BACKEND_DIR/.env" ]; then
   echo ""
-  echo "⚠️  No .env file found in gateway. Creating from example..."
-  if [ -f "$BACKEND_GATEWAY_DIR/.env.example" ]; then
-    cp "$BACKEND_GATEWAY_DIR/.env.example" "$BACKEND_GATEWAY_DIR/.env"
+  echo "⚠️  No .env file found in instivera-api. Creating from example..."
+  if [ -f "$BACKEND_DIR/.env.example" ]; then
+    cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
     echo "✅ Created .env from .env.example"
-    echo "   Please fill in real values in $BACKEND_GATEWAY_DIR/.env"
+    echo "   Please fill in real values in $BACKEND_DIR/.env"
   else
-    echo "❌ No .env.example found either. Create $BACKEND_GATEWAY_DIR/.env manually."
+    echo "❌ No .env.example found either. Create $BACKEND_DIR/.env manually."
     exit 1
   fi
 fi
 lsof -ti :4000 | xargs kill -9 2>/dev/null || true
-# Start the BFF gateway in background
+# Start instivera-api in background
 echo ""
-echo "🚀 Starting BFF Gateway on port 4000..."
-cd "$BACKEND_GATEWAY_DIR"
+echo "🚀 Starting instivera-api on port 4000..."
+cd "$BACKEND_DIR"
 npm install --silent
-npm run build
-node dist/server.js &
-GATEWAY_PID=$!
-echo "✅ Gateway started (PID: $GATEWAY_PID)"
+npx ts-node --transpile-only src/server.ts &
+API_PID=$!
+echo "✅ instivera-api started (PID: $API_PID)"
 
-# Trap to kill gateway on exit
-trap "echo ''; echo '🛑 Stopping gateway...'; kill $GATEWAY_PID 2>/dev/null; exit" INT TERM
+# Trap to kill API on exit
+trap "echo ''; echo '🛑 Stopping instivera-api...'; kill $API_PID 2>/dev/null; exit" INT TERM
 
 # Wait for gateway to be ready
 echo "⏳ Waiting for gateway to start..."
 for i in {1..10}; do
   if curl -s http://127.0.0.1:4000/health > /dev/null 2>&1; then
-    echo "✅ Gateway is ready"
+    echo "✅ instivera-api is ready"
     break
   fi
   if [ $i -eq 10 ]; then
-    echo "❌ Gateway did not start. Check logs above."
-    kill $GATEWAY_PID 2>/dev/null
+    echo "❌ instivera-api did not start. Check logs above."
+    kill $API_PID 2>/dev/null
     exit 1
   fi
   sleep 1
