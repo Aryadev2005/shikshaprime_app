@@ -33,7 +33,8 @@ export const useAssignmentMetadata = () =>
 export const useSubmitAssignment = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (formData: FormData) => assignmentApi.submitAssignment(formData),
+    mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
+      assignmentApi.submitAssignment(id, formData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ASSIGNMENT_KEYS.list });
     },

@@ -104,6 +104,80 @@ export class MessageService {
   }
 }
 
+export interface ChatUserSearchResult {
+  id: number;
+  name: string;
+  role: 'student' | 'teacher';
+}
+
+export class ChatUserService {
+  static async searchUsers(
+    query: string,
+    tenant: string,
+    currentUserId: number,
+    roleFilter: string | undefined,
+  ): Promise<ChatUserSearchResult[]> {
+    const { User, Student, Teacher } = getTenantModels(tenant) as any;
+    const like = `%${query}%`;
+    const results: ChatUserSearchResult[] = [];
+
+    if (!roleFilter || roleFilter === 'student') {
+      const students = await Student.findAll({
+        where: {
+          is_active: 1,
+          [Op.or]: [
+            { student_name: { [Op.like]: like } },
+            { first_name: { [Op.like]: like } },
+            { last_name: { [Op.like]: like } },
+          ],
+        },
+        limit: 20,
+      });
+      const emails = students.map((s: any) => s.email).filter(Boolean);
+      const users = emails.length
+        ? await User.findAll({ where: { email: emails, role: 'student' } })
+        : [];
+      const byEmail = new Map(users.map((u: any) => [u.email, u.id]));
+      for (const s of students) {
+        const uid = byEmail.get(s.email) as number | undefined;
+        if (uid && uid !== currentUserId) {
+          results.push({
+            id: uid,
+            name: s.student_name || `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim(),
+            role: 'student',
+          });
+        }
+      }
+    }
+
+    if (!roleFilter || roleFilter === 'teacher') {
+      const teachers = await Teacher.findAll({
+        where: {
+          is_active: 1,
+          [Op.or]: [
+            { first_name: { [Op.like]: like } },
+            { last_name: { [Op.like]: like } },
+          ],
+        },
+        limit: 20,
+      });
+      const emails = teachers.map((t: any) => t.email).filter(Boolean);
+      const users = emails.length
+        ? await User.findAll({ where: { email: emails, role: { [Op.in]: ['teacher', 'admin'] } } })
+        : [];
+      const byEmail = new Map(users.map((u: any) => [u.email, u.id]));
+      for (const t of teachers) {
+        const uid = byEmail.get(t.email) as number | undefined;
+        if (uid && uid !== currentUserId) {
+          results.push({ id: uid, name: `${t.first_name} ${t.last_name}`.trim(), role: 'teacher' });
+        }
+      }
+    }
+
+    return results.slice(0, 20);
+  }
+}
+
 export class ConversationService {
   static async getConversations(userId: number, userType: string, tenant: string) {
     const { Conversation, ConversationParticipant, Message } = getTenantModels(tenant) as any;

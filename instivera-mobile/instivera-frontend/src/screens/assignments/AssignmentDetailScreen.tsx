@@ -231,9 +231,8 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ route, navigation }) =
         name: asset.name,
         type: asset.mimeType ?? 'application/pdf',
       } as unknown as Blob);
-      formData.append('assignment_id', id);
 
-      submit(formData, {
+      submit({ id, formData }, {
         onSuccess: (res) => {
           Alert.alert(
             'Submitted!',

@@ -98,6 +98,72 @@ export class PaymentService {
     return { payment, gatewayStatus: response.data?.data?.state };
   }
 
+  static async getPaymentSummary(studentId: string, tenant: string) {
+    const { FeeCollection, FeeHead, Receipt } = getTenantModels(tenant) as any;
+
+    const collections = await FeeCollection.findAll({
+      where: { student_id: studentId },
+      include: [{ model: FeeHead, as: 'feeHead', attributes: ['id', 'name', 'amount'] }],
+      order: [['due_date', 'ASC']],
+    });
+
+    const annualTotal = collections.reduce((sum: number, c: any) => sum + Number(c.amount), 0);
+    const paidSoFar = collections.reduce((sum: number, c: any) => sum + Number(c.paid_amount), 0);
+
+    const unpaid = collections.filter((c: any) => c.status !== 'PAID');
+    const totalOutstanding = unpaid.reduce((sum: number, c: any) => sum + Number(c.balance), 0);
+    const nextDue = unpaid.find((c: any) => c.due_date) ?? null;
+    const isOverdue = unpaid.some((c: any) => c.status === 'OVERDUE');
+
+    const recentReceipts = await Receipt.findAll({
+      where: { student_id: studentId },
+      order: [['date', 'DESC']],
+      limit: 5,
+    });
+
+    return {
+      outstanding: {
+        totalAmount: totalOutstanding,
+        currency: 'INR' as const,
+        dueDate: nextDue?.due_date ?? null,
+        isOverdue,
+      },
+      annualTotal,
+      paidSoFar,
+      primaryPaymentId: unpaid.length > 0 ? String(unpaid[0].collection_id ?? unpaid[0].id) : null,
+      breakdown: collections.map((c: any) => ({
+        label: c.feeHead?.name ?? 'Fee',
+        amount: Number(c.amount),
+        paidAmount: Number(c.paid_amount),
+        balance: Number(c.balance),
+        status: c.status,
+        dueDate: c.due_date,
+      })),
+      recentPayments: recentReceipts.map((r: any) => ({
+        label: r.description ?? r.receipt_number ?? 'Payment',
+        date: r.date,
+        mode: r.payment_mode ?? '',
+        amount: Number(r.amount),
+      })),
+    };
+  }
+
+  static async getPaymentHistory(studentId: string, tenant: string) {
+    const { Receipt } = getTenantModels(tenant) as any;
+    const receipts = await Receipt.findAll({
+      where: { student_id: studentId },
+      order: [['date', 'DESC']],
+    });
+    return receipts.map((r: any) => ({
+      id: String(r.id),
+      receiptNumber: r.receipt_number ?? '',
+      date: r.date,
+      amount: Number(r.amount),
+      mode: r.payment_mode ?? '',
+      description: r.description ?? '',
+    }));
+  }
+
   static async handleWebhook(encodedResponse: string, checksum: string, tenant: string) {
     if (!phonePeAvailable()) throw AppError.badRequest('PhonePe not configured');
 

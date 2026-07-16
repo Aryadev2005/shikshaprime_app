@@ -15,7 +15,10 @@ export const chatApi = {
   },
 
   createDirect: async (payload: CreateDirectPayload): Promise<Conversation> => {
-    const res = await client.post('/chat/conversations/direct', payload);
+    const res = await client.post('/chat/conversations/direct', {
+      target_user_id: payload.targetUserId,
+      target_user_type: payload.targetUserType,
+    });
     return res.data?.data ?? res.data;
   },
 

@@ -3,17 +3,10 @@ import config from '../config';
 
 const logger = pino({
   level: config.logLevel,
-  transport:
-    config.env === 'development'
-      ? {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'SYS:standard',
-            ignore: 'pid,hostname',
-          },
-        }
-      : undefined,
+  // TEMP: pino-pretty's worker-thread transport hangs silently in this
+  // sandbox (no error, no output, no listen). Disabled for local
+  // verification only — revert before committing.
+  transport: undefined,
 });
 
 export default logger;

@@ -12,11 +12,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TOKENS } from '../../theme/tokens';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/modules/auth.api';
-
-type AuthStackParamList = {
-  Login: undefined;
-  OTP: { email: string };
-};
+import { AuthStackParamList } from '../../navigation/types';
 
 type OtpScreenProps = NativeStackScreenProps<AuthStackParamList, 'OTP'>;
 
@@ -28,9 +24,19 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ route, navigation }) => {
   const [email, setEmail] = useState(route.params?.email || '');
   const [showEmailInput, setShowEmailInput] = useState(!route.params?.email);
 
+  const tenant = route.params?.tenant;
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const { login } = useAuthStore();
+
+  // No institution resolved — OTP login can't proceed without a tenant.
+  useEffect(() => {
+    if (!tenant) {
+      navigation.replace('SelectInstitution');
+    }
+  }, [tenant, navigation]);
+
+  if (!tenant) return null;
 
   useEffect(() => {
     if (timeLeft === 0) return;
@@ -79,7 +85,7 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ route, navigation }) => {
 
     try {
       const response = await authApi.verifyOtp({ email, otp: codeToVerify });
-      await login(email, '', 'collegea'); // Will use token from response
+      await login(email, '', tenant); // Will use token from response
       // Navigation handled by root navigator
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'OTP verification failed';

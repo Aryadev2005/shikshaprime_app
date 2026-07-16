@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,10 +27,19 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const { login, isLoading, setSelectedInstitution } = useAuthStore();
 
-  // Pull institution info from route params, fall back to defaults
-  const tenant = route.params?.tenant ?? 'collegea';
-  const institutionName = route.params?.institutionName ?? tenant;
+  const tenant = route.params?.tenant;
+  const institutionName = route.params?.institutionName ?? tenant ?? '';
   const institutionType = route.params?.institutionType ?? 'college';
+
+  // No institution resolved (e.g. stale nav state) — send the user back to
+  // pick one instead of falling through to a hardcoded/wrong tenant.
+  useEffect(() => {
+    if (!tenant) {
+      navigation.replace('SelectInstitution');
+    }
+  }, [tenant, navigation]);
+
+  if (!tenant) return null;
 
   const handleLogin = useCallback(async () => {
     if (!username || !password) {
@@ -62,10 +71,15 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
         <View style={styles.formContainer}>
           {/* Institution display */}
-          <View style={styles.institutionField}>
+          <TouchableOpacity
+            style={styles.institutionField}
+            onPress={() => navigation.navigate('SelectInstitution')}
+            disabled={isLoading}
+          >
             <MaterialCommunityIcons name="school" size={24} color={TOKENS.coral} />
             <Text style={styles.institutionText}>{institutionName}</Text>
-          </View>
+            <Text style={styles.changeLink}>Change</Text>
+          </TouchableOpacity>
 
           <View style={styles.field}>
             <Text style={styles.label}>Username or Email</Text>
@@ -125,7 +139,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => navigation.navigate('OTP', { email: '' })}
+            onPress={() => navigation.navigate('OTP', { email: '', tenant })}
             disabled={isLoading}
           >
             <Text style={styles.otpLink}>Sign In with OTP</Text>
@@ -204,6 +218,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: TOKENS.ink,
     fontWeight: '600',
+  },
+  changeLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: TOKENS.coral,
   },
   field: {
     marginBottom: 20,

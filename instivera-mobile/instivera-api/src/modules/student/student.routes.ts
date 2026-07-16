@@ -12,6 +12,6 @@ router.get('/attendance', requireRole('student'), getMyAttendance);
 router.get('/attendance/summary', requireRole('student'), getAttendanceSummary);
 
 // Shared (teacher/admin can search students)
-router.get('/search', searchStudents);
+router.get('/search', requireRole('teacher', 'admin'), searchStudents);
 
 export default router;

@@ -3,7 +3,7 @@ import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess } from '../../utils/response';
 import { AppError } from '../../utils/appError';
 import { verifyToken } from '../../utils/jwt';
-import { ConversationService, MessageService } from './message.service';
+import { ConversationService, MessageService, ChatUserService } from './message.service';
 
 function resolveUser(req: Request): { userId: number; userType: string } {
   const payload = req.user!;
@@ -46,6 +46,15 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response) => {
   if (!content) throw AppError.badRequest('content is required');
   const result = await MessageService.sendMessage(Number(req.params.id), userId, userType, content, message_type || 'text', req.tenant!);
   sendSuccess(res, result, 'Message sent', 201);
+});
+
+export const searchUsers = asyncHandler(async (req: Request, res: Response) => {
+  const { userId } = resolveUser(req);
+  const q = String(req.query.q ?? '').trim();
+  const role = req.query.role as string | undefined;
+  if (q.length < 2) { sendSuccess(res, []); return; }
+  const result = await ChatUserService.searchUsers(q, req.tenant!, userId, role);
+  sendSuccess(res, result);
 });
 
 export const markAsRead = asyncHandler(async (req: Request, res: Response) => {

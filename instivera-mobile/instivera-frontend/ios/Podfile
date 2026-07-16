@@ -67,9 +67,13 @@ target 'INSTIVERA' do
     # errors without this override.
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-        config.build_settings['SWIFT_VERSION']              = '5.0'
-        config.build_settings['SWIFT_STRICT_CONCURRENCY']  = 'minimal'
+        config.build_settings['SWIFT_VERSION']               = '5.0'
+        config.build_settings['SWIFT_STRICT_CONCURRENCY']   = 'minimal'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.4'
         config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
+        # Xcode 16.x: AssetCatalogSimulatorAgent crashes during simulator thinning.
+        # Skipping App Store deployment disables the thinning variant that triggers it.
+        config.build_settings['ASSETCATALOG_COMPILER_SKIP_APP_STORE_DEPLOYMENT'] = 'YES'
       end
 
       # Neutralise the "[CP-User] [Hermes] Replace Hermes" build phase.
@@ -86,6 +90,22 @@ target 'INSTIVERA' do
           if phase.respond_to?(:name) &&
              phase.name == '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed'
             phase.shell_script = "echo 'Hermes already in place — extraction skipped'"
+          end
+        end
+      end
+
+      # Neutralise the "[CP-User] Build ExpoModulesJSI xcframework" build phase.
+      # expo-modules-jsi/apple/Package.swift requires swift-tools-version 6.2 and
+      # Swift 6.2 source features (weak let, Escapable) that are unavailable in
+      # Xcode 16.2 (Swift 6.0). The xcframework in Products/ was pre-built and is
+      # ABI-stable (built with -enable-library-evolution + -emit-module-interface),
+      # so it works with any Swift 6.x host. Skipping the rebuild script uses the
+      # existing framework directly without re-invoking SPM.
+      if target.name == 'ExpoModulesJSI'
+        target.build_phases.each do |phase|
+          if phase.respond_to?(:name) &&
+             phase.name == '[CP-User] Build ExpoModulesJSI xcframework'
+            phase.shell_script = "echo 'ExpoModulesJSI xcframework already built — skipping SPM rebuild'"
           end
         end
       end

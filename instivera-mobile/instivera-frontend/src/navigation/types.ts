@@ -1,8 +1,9 @@
 import { ClassStudent, AttendanceStatus } from '../types/attendance';
 
 export type AuthStackParamList = {
+  SelectInstitution: undefined;
   Login: { tenant?: string; institutionName?: string; institutionType?: 'school' | 'college' } | undefined;
-  OTP: { email: string };
+  OTP: { email: string; tenant?: string };
   SignUp: { tenant: string; institutionName: string; institutionType: 'school' | 'college' };
   RegistrationSuccess: { regId: string; institutionName: string };
   RegistrationStatus: { regId?: string };

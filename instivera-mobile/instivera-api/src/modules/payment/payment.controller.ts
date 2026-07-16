@@ -32,6 +32,18 @@ export const getPaymentStatus = asyncHandler(async (req: Request, res: Response)
   sendSuccess(res, result);
 });
 
+export const getPaymentSummary = asyncHandler(async (req: Request, res: Response) => {
+  const studentId = req.user!.user_code;
+  const result = await PaymentService.getPaymentSummary(studentId, req.tenant!);
+  sendSuccess(res, result);
+});
+
+export const getPaymentHistory = asyncHandler(async (req: Request, res: Response) => {
+  const studentId = req.user!.user_code;
+  const result = await PaymentService.getPaymentHistory(studentId, req.tenant!);
+  sendSuccess(res, result);
+});
+
 export const handleWebhook = asyncHandler(async (req: Request, res: Response) => {
   const { response: encodedResponse } = req.body;
   const checksum = req.headers['x-verify'] as string;
