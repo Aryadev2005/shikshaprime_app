@@ -10,7 +10,7 @@ export const listPayments = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const listPaymentsFromToken = asyncHandler(async (req: Request, res: Response) => {
-  const studentId = req.user!.user_code;
+  const studentId = req.user!.user_code!;
   const result = await PaymentService.listPayments(studentId, req.tenant!);
   sendSuccess(res, result);
 });
@@ -21,7 +21,7 @@ export const getPaymentDetail = asyncHandler(async (req: Request, res: Response)
 });
 
 export const initiatePayment = asyncHandler(async (req: Request, res: Response) => {
-  const studentId = req.user!.user_code;
+  const studentId = req.user!.user_code!;
   const { amount, description, callback_url } = req.body;
   const result = await PaymentService.initiatePayment(studentId, Number(amount), description, callback_url, req.tenant!);
   sendSuccess(res, result, 'Payment initiated', 201);
@@ -33,13 +33,13 @@ export const getPaymentStatus = asyncHandler(async (req: Request, res: Response)
 });
 
 export const getPaymentSummary = asyncHandler(async (req: Request, res: Response) => {
-  const studentId = req.user!.user_code;
+  const studentId = req.user!.user_code!;
   const result = await PaymentService.getPaymentSummary(studentId, req.tenant!);
   sendSuccess(res, result);
 });
 
 export const getPaymentHistory = asyncHandler(async (req: Request, res: Response) => {
-  const studentId = req.user!.user_code;
+  const studentId = req.user!.user_code!;
   const result = await PaymentService.getPaymentHistory(studentId, req.tenant!);
   sendSuccess(res, result);
 });

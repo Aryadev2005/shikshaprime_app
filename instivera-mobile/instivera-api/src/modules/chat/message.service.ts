@@ -137,7 +137,7 @@ export class ChatUserService {
       const users = emails.length
         ? await User.findAll({ where: { email: emails, role: 'student' } })
         : [];
-      const byEmail = new Map(users.map((u: any) => [u.email, u.id]));
+      const byEmail = new Map(users.map((u: any) => [u.email, u.user_id]));
       for (const s of students) {
         const uid = byEmail.get(s.email) as number | undefined;
         if (uid && uid !== currentUserId) {
@@ -165,7 +165,7 @@ export class ChatUserService {
       const users = emails.length
         ? await User.findAll({ where: { email: emails, role: { [Op.in]: ['teacher', 'admin'] } } })
         : [];
-      const byEmail = new Map(users.map((u: any) => [u.email, u.id]));
+      const byEmail = new Map(users.map((u: any) => [u.email, u.user_id]));
       for (const t of teachers) {
         const uid = byEmail.get(t.email) as number | undefined;
         if (uid && uid !== currentUserId) {

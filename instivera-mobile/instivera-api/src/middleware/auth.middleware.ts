@@ -6,10 +6,16 @@ import { verifyToken } from '../utils/jwt';
 import { AuthUser, JwtPayload } from '../types';
 
 const VALID_USER_TYPES = new Set(['teacher', 'student', 'admin']);
-const REQUIRED_FIELDS: (keyof JwtPayload)[] = ['user_id', 'username', 'role', 'user_code'];
+const REQUIRED_FIELDS: (keyof JwtPayload)[] = ['user_id', 'username', 'role'];
+// user_code only exists for accounts with a matching Student/Teacher record — admin,
+// parent, and applicant accounts have none, so it can't be universally required.
+const USER_CODE_REQUIRED_ROLES = new Set(['student', 'teacher']);
 
 function assertPayload(payload: JwtPayload): void {
-  const missing = REQUIRED_FIELDS.filter(
+  const requiredFields = USER_CODE_REQUIRED_ROLES.has(payload.role)
+    ? [...REQUIRED_FIELDS, 'user_code' as const]
+    : REQUIRED_FIELDS;
+  const missing = requiredFields.filter(
     (f) => payload[f] === undefined || payload[f] === null || payload[f] === '',
   );
   if (missing.length > 0) {

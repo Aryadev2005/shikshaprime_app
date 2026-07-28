@@ -22,34 +22,59 @@ export class TeacherAttendanceService {
     const today = new Date().toISOString().split('T')[0];
     if (attendanceDate > today) throw AppError.badRequest('Cannot mark attendance for future dates');
 
-    const { StudentDailyAttendance } = getTenantModels(tenant);
+    const { StudentDailyAttendance, Student } = getTenantModels(tenant);
 
-    const upserts = records.map((r) =>
-      StudentDailyAttendance.upsert({
+    // student_daily_attendance.student_id is students.id (numeric) — records[].student_id
+    // from the client is the varchar students.student_id business code, so resolve first.
+    const businessCodes = records.map((r) => r.student_id);
+    const students = await Student.findAll({
+      where: { student_id: { [Op.in]: businessCodes } },
+      attributes: ['id', 'student_id'],
+    });
+    const idByCode = new Map(students.map((s) => [s.student_id, s.id]));
+
+    const upserts = records.map((r) => {
+      const numericStudentId = idByCode.get(r.student_id);
+      if (!numericStudentId) throw AppError.notFound(`Student not found: ${r.student_id}`);
+      return StudentDailyAttendance.upsert({
         attendance_id: `${classId}-${r.student_id}-${attendanceDate}`,
-        student_id: r.student_id,
-        class_id: classId,
+        student_id: numericStudentId,
+        student_code: r.student_id,
         attendance_date: attendanceDate as any,
         attendance_status: r.attendance_status as any,
         attendance_type: 'MOBILE_APP',
         marked_by: markedBy,
         marked_by_type: 'TEACHER',
         remarks: r.remarks,
-      } as any),
-    );
+      } as any);
+    });
 
     await Promise.all(upserts);
     return { marked: records.length };
   }
 
   static async getClassSummary(classId: number, date: string, tenant: string) {
-    const { StudentDailyAttendance } = getTenantModels(tenant);
-    const rows = await StudentDailyAttendance.findAll({
-      where: { class_id: classId, attendance_date: date as any },
+    const { StudentDailyAttendance, Student } = getTenantModels(tenant);
+
+    // student_daily_attendance has no class_id column — scope via the class's
+    // student list (already the source of truth for class membership) instead.
+    const classStudents = await Student.findAll({
+      where: { class_id: classId, is_active: 1 },
+      attributes: ['id'],
     });
+    const studentIds = classStudents.map((s) => s.id);
+
+    const rows = studentIds.length
+      ? await StudentDailyAttendance.findAll({
+          where: { student_id: { [Op.in]: studentIds }, attendance_date: date as any },
+        })
+      : [];
 
     const summary: Record<string, number> = { PRESENT: 0, ABSENT: 0, LATE: 0, LEAVE: 0, HALF_DAY: 0 };
-    rows.forEach((r) => { if (r.attendance_status in summary) summary[r.attendance_status]++; });
+    rows.forEach((r) => {
+      const s = r.attendance_status;
+      if (s && s in summary) summary[s]++;
+    });
     return { date, class_id: classId, total: rows.length, ...summary };
   }
 

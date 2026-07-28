@@ -20,7 +20,8 @@ export interface JwtPayload {
   username: string;
   role: string;
   user_type: string;
-  user_code: string;
+  // Only present for student/teacher accounts (see auth.middleware.ts USER_CODE_REQUIRED_ROLES).
+  user_code?: string;
   email: string;
   id?: number;
   sub?: number;
@@ -54,22 +55,6 @@ export type { Request };
 
 // ── Auth types (gateway/src/types/auth.types.ts) ───────────────────────────────
 
-export interface MobileUser {
-  id: string;
-  name: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  email: string;
-  avatarInitials: string;
-  userCode: string;
-}
-
-export interface MobileLoginResponse {
-  user: MobileUser;
-  token: string;
-}
-
 export interface AuthLoginRequest {
   username: string;
   password: string;
@@ -86,22 +71,6 @@ export interface AuthVerifyOtpRequest {
 
 export interface AuthValidateEmailRequest {
   email: string;
-}
-
-export interface IdentityLoginResponse {
-  status: 1 | 0;
-  data: {
-    role: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    username: string;
-    user_id: string;
-    user_type: string;
-    user_code: string;
-  };
-  token: string;
-  message: string;
 }
 
 export interface IdentitySendOtpResponse {

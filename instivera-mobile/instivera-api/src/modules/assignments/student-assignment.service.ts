@@ -1,16 +1,26 @@
 import { getTenantModels } from '../../models';
 import { AppError } from '../../utils/appError';
 
+// student_assignment_submissions.student_id is students.id (numeric), not the
+// varchar students.student_id business code these methods are called with.
+async function resolveNumericStudentId(studentId: string, tenant: string): Promise<number> {
+  const { Student } = getTenantModels(tenant) as any;
+  const student = await Student.findOne({ where: { student_id: studentId }, attributes: ['id'] });
+  if (!student) throw AppError.notFound('Student not found');
+  return student.id;
+}
+
 export class StudentAssignmentService {
   static async listMyAssignments(studentId: string, tenant: string, filters: Record<string, any>) {
     const { TeacherAssignment, AssignmentSubmission, Student, SchoolClass: _Class, Subject } = getTenantModels(tenant) as any;
 
-    // Resolve student's class_id if not provided
+    // Resolve student's class_id if not provided.
+    // NOTE: students has no class_id column (separate pre-existing schema-drift
+    // issue in the Student model, out of scope here) — this can only work when
+    // the caller supplies filters.class_id explicitly.
     let classId = filters.class_id;
-    if (!classId) {
-      const student = await Student.findOne({ where: { student_id: studentId } });
-      classId = student?.class_id;
-    }
+    const student = await Student.findOne({ where: { student_id: studentId }, attributes: ['id', 'student_id'] });
+    if (!student) throw AppError.notFound('Student not found');
 
     const where: Record<string, any> = { is_active: 1 };
     if (classId) where.class_id = classId;
@@ -24,7 +34,7 @@ export class StudentAssignmentService {
         {
           model: AssignmentSubmission,
           as: 'submissions',
-          where: { student_id: studentId },
+          where: { student_id: student.id },
           required: false,
           attributes: ['id', 'status', 'marks_obtained', 'grade', 'submitted_at'],
         },
@@ -37,12 +47,13 @@ export class StudentAssignmentService {
 
   static async getAssignmentById(assignmentId: number, studentId: string, tenant: string) {
     const { TeacherAssignment, AssignmentSubmission, Subject } = getTenantModels(tenant) as any;
+    const numericStudentId = await resolveNumericStudentId(studentId, tenant);
     const assignment = await TeacherAssignment.findByPk(assignmentId, {
       include: [
         { model: Subject, as: 'subject', attributes: ['id', 'name', 'code'] },
         {
           model: AssignmentSubmission, as: 'submissions',
-          where: { student_id: studentId }, required: false,
+          where: { student_id: numericStudentId }, required: false,
         },
       ],
     });
@@ -58,6 +69,7 @@ export class StudentAssignmentService {
     tenant: string,
   ) {
     const { TeacherAssignment, AssignmentSubmission } = getTenantModels(tenant);
+    const numericStudentId = await resolveNumericStudentId(studentId, tenant);
 
     const assignment = await TeacherAssignment.findByPk(assignmentId);
     if (!assignment) throw AppError.notFound('Assignment not found');
@@ -69,7 +81,7 @@ export class StudentAssignmentService {
 
     const [submission, created] = await AssignmentSubmission.upsert({
       teacher_assignment_id: assignmentId,
-      student_id: studentId,
+      student_id: numericStudentId,
       submission_text: submissionText,
       file_url: fileUrl,
       submitted_at: new Date(),

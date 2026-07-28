@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Op } from 'sequelize';
 import { asyncHandler } from '../../utils/asyncHandler';
 import { sendSuccess, sendError } from '../../utils/response';
 import { getTenantModels } from '../../models';
@@ -9,7 +10,7 @@ import { StudentAttendanceService } from '../student/attendance.service';
 export const getMyRecords = asyncHandler(async (req: Request, res: Response) => {
   const { month, year, from, to } = req.query as Record<string, string>;
   const result = await StudentAttendanceService.getMyAttendance(
-    req.user!.user_code,
+    req.user!.user_code!,
     req.tenant!,
     { month, year, from, to },
   );
@@ -51,15 +52,18 @@ export const getClassSummary = asyncHandler(async (req: Request, res: Response) 
 
   const { StudentDailyAttendance } = getTenantModels(req.tenant!);
 
-  const [studentRows, attendanceRows] = await Promise.all([
-    TeacherAttendanceService.getClassStudents(classId, req.tenant!),
-    StudentDailyAttendance.findAll({
-      where: { class_id: classId, attendance_date: date as any },
-      attributes: ['student_id', 'attendance_status'],
-    }),
-  ]);
+  const studentRows = await TeacherAttendanceService.getClassStudents(classId, req.tenant!);
+  // student_daily_attendance has no class_id column — scope via this class's
+  // student list (numeric id), then map back onto student_id (business code) for display.
+  const numericIds = (studentRows as any[]).map((s) => s.id);
+  const attendanceRows = numericIds.length
+    ? await StudentDailyAttendance.findAll({
+        where: { student_id: { [Op.in]: numericIds }, attendance_date: date as any },
+        attributes: ['student_id', 'attendance_status'],
+      })
+    : [];
 
-  const statusMap: Record<string, string> = {};
+  const statusMap: Record<number, string | undefined> = {};
   (attendanceRows as any[]).forEach((r) => {
     statusMap[r.student_id] = r.attendance_status;
   });
@@ -69,7 +73,7 @@ export const getClassSummary = asyncHandler(async (req: Request, res: Response) 
     studentCode: s.student_id,
     name: s.student_name || `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim(),
     rollNo: s.roll_number || '',
-    status: (statusMap[s.student_id] ?? null) as 'PRESENT' | 'ABSENT' | null,
+    status: (statusMap[s.id] ?? null) as 'PRESENT' | 'ABSENT' | null,
     attendancePercentage: 0,
   }));
 
@@ -120,7 +124,7 @@ export const bulkMark = asyncHandler(async (req: Request, res: Response) => {
     Number(classInfo.class_id),
     date,
     records,
-    req.user!.user_code,
+    req.user!.user_code!,
     req.tenant!,
   );
 

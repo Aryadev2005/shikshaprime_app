@@ -1,6 +1,25 @@
 import { getTenantModels } from '../../models';
 import { AppError } from '../../utils/appError';
 import { TeacherService } from '../teacher/teacher.service';
+import { fileUrl } from '../../middleware/upload.middleware';
+
+// teacher_assignments has no file_url column — attachments live in the separate
+// teacher_assignment_attachments table instead.
+async function attachFileIfPresent(
+  assignmentId: number,
+  file: Express.Multer.File | undefined,
+  tenant: string,
+): Promise<void> {
+  if (!file) return;
+  const { TeacherAssignmentAttachment } = getTenantModels(tenant);
+  await TeacherAssignmentAttachment.create({
+    teacher_assignment_id: assignmentId,
+    file_name: file.originalname,
+    file_url: fileUrl(file)!,
+    file_size: file.size,
+    file_type: file.mimetype,
+  });
+}
 
 export class TeacherAssignmentService {
   static async listAssignments(teacherId: number, tenant: string, filters: Record<string, any>) {
@@ -19,31 +38,36 @@ export class TeacherAssignmentService {
     });
   }
 
-  static async createAssignment(teacherId: number, data: Record<string, any>, tenant: string) {
+  static async createAssignment(teacherId: number, data: Record<string, any>, tenant: string, file?: Express.Multer.File) {
     const { TeacherAssignment } = getTenantModels(tenant);
     const assignment = await TeacherAssignment.create({
       ...data,
       teacher_id: teacherId,
       is_active: 1,
     } as any);
+    await attachFileIfPresent(assignment.id, file, tenant);
     return assignment;
   }
 
   static async getAssignmentById(assignmentId: number, teacherId: number, tenant: string) {
-    const { TeacherAssignment, AssignmentSubmission } = getTenantModels(tenant) as any;
+    const { TeacherAssignment, AssignmentSubmission, TeacherAssignmentAttachment } = getTenantModels(tenant) as any;
     const assignment = await TeacherAssignment.findOne({
       where: { id: assignmentId, teacher_id: teacherId },
-      include: [{ model: AssignmentSubmission, as: 'submissions' }],
+      include: [
+        { model: AssignmentSubmission, as: 'submissions' },
+        { model: TeacherAssignmentAttachment, as: 'attachments' },
+      ],
     });
     if (!assignment) throw AppError.notFound('Assignment not found');
     return assignment;
   }
 
-  static async updateAssignment(assignmentId: number, teacherId: number, data: Record<string, any>, tenant: string) {
+  static async updateAssignment(assignmentId: number, teacherId: number, data: Record<string, any>, tenant: string, file?: Express.Multer.File) {
     const { TeacherAssignment } = getTenantModels(tenant);
     const assignment = await TeacherAssignment.findOne({ where: { id: assignmentId, teacher_id: teacherId } });
     if (!assignment) throw AppError.notFound('Assignment not found');
     await assignment.update(data);
+    await attachFileIfPresent(assignmentId, file, tenant);
     return assignment;
   }
 

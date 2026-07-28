@@ -5,18 +5,18 @@ import { TeacherService } from './teacher.service';
 import { TeacherAttendanceService } from './teacher-attendance.service';
 
 export const getProfile = asyncHandler(async (req: Request, res: Response) => {
-  const result = await TeacherService.getProfile(req.user!.user_code, req.tenant!);
+  const result = await TeacherService.getProfile(req.user!.user_code!, req.tenant!);
   sendSuccess(res, result);
 });
 
 export const getMyClasses = asyncHandler(async (req: Request, res: Response) => {
-  const teacherId = await TeacherService.resolveTeacherId(req.user!.user_code, req.tenant!);
+  const teacherId = await TeacherService.resolveTeacherId(req.user!.user_code!, req.tenant!);
   const result = await TeacherService.getMyClasses(teacherId, req.tenant!);
   sendSuccess(res, result);
 });
 
 export const getTimetable = asyncHandler(async (req: Request, res: Response) => {
-  const teacherId = await TeacherService.resolveTeacherId(req.user!.user_code, req.tenant!);
+  const teacherId = await TeacherService.resolveTeacherId(req.user!.user_code!, req.tenant!);
   const result = await TeacherService.getTimetable(teacherId, req.tenant!);
   sendSuccess(res, result);
 });
@@ -38,7 +38,7 @@ export const bulkMarkAttendance = asyncHandler(async (req: Request, res: Respons
   const classId = Number(req.params.classId);
   const { attendance_date, records } = req.body;
   const result = await TeacherAttendanceService.bulkMarkAttendance(
-    classId, attendance_date, records, req.user!.user_code, req.tenant!,
+    classId, attendance_date, records, req.user!.user_code!, req.tenant!,
   );
   sendSuccess(res, result, 'Attendance marked successfully');
 });
@@ -52,6 +52,6 @@ export const getClassSummary = asyncHandler(async (req: Request, res: Response) 
 
 export const getMyAttendance = asyncHandler(async (req: Request, res: Response) => {
   const { from, to } = req.query as Record<string, string>;
-  const result = await TeacherAttendanceService.getMyAttendance(req.user!.user_code, req.tenant!, { from, to });
+  const result = await TeacherAttendanceService.getMyAttendance(req.user!.user_code!, req.tenant!, { from, to });
   sendSuccess(res, result);
 });

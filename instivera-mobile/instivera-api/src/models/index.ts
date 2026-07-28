@@ -14,28 +14,155 @@ import { getTenantSequelize, globalSequelize } from '../db';
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── User ──────────────────────────────────────────────────────────────────────
-interface UserAttrs { id: number; username: string; email: string; password_hash: string; role: string; user_type: string; user_code: string; is_active: number; created_at?: Date; updated_at?: Date; }
-interface UserCreate extends Optional<UserAttrs, 'id'> {}
+interface UserAttrs {
+  user_id: number; username: string; email: string; password_hash: string;
+  first_name?: string; last_name?: string; role: string; user_type: string;
+  status?: string; last_login?: Date; access_code?: string; is_active?: number;
+  avatar?: string; created_at?: Date; updated_at?: Date;
+}
+interface UserCreate extends Optional<UserAttrs, 'user_id'> {}
 class User extends Model<UserAttrs, UserCreate> implements UserAttrs {
-  public id!: number; public username!: string; public email!: string; public password_hash!: string;
-  public role!: string; public user_type!: string; public user_code!: string; public is_active!: number;
-  public created_at?: Date; public updated_at?: Date;
+  public user_id!: number; public username!: string; public email!: string; public password_hash!: string;
+  public first_name?: string; public last_name?: string; public role!: string; public user_type!: string;
+  public status?: string; public last_login?: Date; public access_code?: string; public is_active?: number;
+  public avatar?: string; public created_at?: Date; public updated_at?: Date;
 }
 function defineUser(seq: Sequelize) {
-  User.init({ id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true }, username: { type: DataTypes.STRING(100), allowNull: false, unique: true }, email: { type: DataTypes.STRING(255), allowNull: false, unique: true }, password_hash: { type: DataTypes.STRING(255), allowNull: false }, role: { type: DataTypes.ENUM('admin', 'teacher', 'student'), allowNull: false }, user_type: { type: DataTypes.STRING(50), allowNull: false }, user_code: { type: DataTypes.STRING(50), allowNull: false, unique: true }, is_active: { type: DataTypes.TINYINT, defaultValue: 1 } }, { sequelize: seq, tableName: 'users', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  User.init({
+    user_id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    username: { type: DataTypes.STRING(50), allowNull: false, unique: true },
+    email: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+    password_hash: { type: DataTypes.STRING(255), allowNull: false },
+    first_name: { type: DataTypes.STRING(50), allowNull: true },
+    last_name: { type: DataTypes.STRING(50), allowNull: true },
+    role: { type: DataTypes.ENUM('admin', 'teacher', 'student', 'parent', 'applicant'), allowNull: false, defaultValue: 'student' },
+    user_type: { type: DataTypes.ENUM('admin', 'teacher', 'student', 'parent', 'applicant'), allowNull: false, defaultValue: 'student' },
+    status: { type: DataTypes.ENUM('active', 'inactive', 'pending'), allowNull: true, defaultValue: 'pending' },
+    last_login: { type: DataTypes.DATE, allowNull: true },
+    access_code: { type: DataTypes.STRING(255), allowNull: true },
+    is_active: { type: DataTypes.INTEGER, allowNull: true },
+    avatar: { type: DataTypes.STRING(100), allowNull: true },
+  }, { sequelize: seq, tableName: 'users', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
   return User;
 }
 
-// ── OtpRequest ────────────────────────────────────────────────────────────────
-interface OtpAttrs { id: number; email: string; otp_hash: string; expires_at: Date; attempts: number; is_used: number; created_at?: Date; updated_at?: Date; }
-interface OtpCreate extends Optional<OtpAttrs, 'id'> {}
-class OtpRequest extends Model<OtpAttrs, OtpCreate> implements OtpAttrs {
-  public id!: number; public email!: string; public otp_hash!: string; public expires_at!: Date;
-  public attempts!: number; public is_used!: number; public created_at?: Date; public updated_at?: Date;
+// ── PhoneOtpRequest (phone/SMS channel) ────────────────────────────────────────
+interface PhoneOtpAttrs { id: number; phone_number: string; otp_code: string; expires_at: Date; attempts?: number; created_at?: Date; updated_at?: Date; }
+interface PhoneOtpCreate extends Optional<PhoneOtpAttrs, 'id'> {}
+class PhoneOtpRequest extends Model<PhoneOtpAttrs, PhoneOtpCreate> implements PhoneOtpAttrs {
+  public id!: number; public phone_number!: string; public otp_code!: string; public expires_at!: Date;
+  public attempts?: number; public created_at?: Date; public updated_at?: Date;
 }
-function defineOtpRequest(seq: Sequelize) {
-  OtpRequest.init({ id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true }, email: { type: DataTypes.STRING(255), allowNull: false }, otp_hash: { type: DataTypes.STRING(255), allowNull: false }, expires_at: { type: DataTypes.DATE, allowNull: false }, attempts: { type: DataTypes.INTEGER, defaultValue: 0 }, is_used: { type: DataTypes.TINYINT, defaultValue: 0 } }, { sequelize: seq, tableName: 'otp_requests', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
-  return OtpRequest;
+function definePhoneOtpRequest(seq: Sequelize) {
+  PhoneOtpRequest.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    phone_number: { type: DataTypes.STRING(20), allowNull: false },
+    otp_code: { type: DataTypes.STRING(6), allowNull: false },
+    expires_at: { type: DataTypes.DATE, allowNull: false },
+    attempts: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  }, { sequelize: seq, tableName: 'otp_requests', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return PhoneOtpRequest;
+}
+
+// ── EmailOtpRequest (email channel) ─────────────────────────────────────────────
+interface EmailOtpAttrs { id: number; email: string; otp_code: string; expires_at: Date; attempts?: number; created_at?: Date; updated_at?: Date; }
+interface EmailOtpCreate extends Optional<EmailOtpAttrs, 'id'> {}
+class EmailOtpRequest extends Model<EmailOtpAttrs, EmailOtpCreate> implements EmailOtpAttrs {
+  public id!: number; public email!: string; public otp_code!: string; public expires_at!: Date;
+  public attempts?: number; public created_at?: Date; public updated_at?: Date;
+}
+function defineEmailOtpRequest(seq: Sequelize) {
+  EmailOtpRequest.init({
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true, allowNull: false },
+    email: { type: DataTypes.STRING(255), allowNull: false },
+    otp_code: { type: DataTypes.STRING(10), allowNull: false },
+    expires_at: { type: DataTypes.DATE, allowNull: false },
+    attempts: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+  }, { sequelize: seq, tableName: 'email_otp_requests', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return EmailOtpRequest;
+}
+
+// ── Permission ───────────────────────────────────────────────────────────────
+interface PermissionAttrs { permission_id: number; module_id?: number; permission_key?: string; permission_name?: string; created_at?: Date; }
+interface PermissionCreate extends Optional<PermissionAttrs, 'permission_id'> {}
+class Permission extends Model<PermissionAttrs, PermissionCreate> implements PermissionAttrs {
+  public permission_id!: number; public module_id?: number; public permission_key?: string;
+  public permission_name?: string; public created_at?: Date;
+}
+function definePermission(seq: Sequelize) {
+  Permission.init({
+    permission_id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    module_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+    permission_key: { type: DataTypes.STRING(100), allowNull: true },
+    permission_name: { type: DataTypes.STRING(200), allowNull: true },
+  }, { sequelize: seq, tableName: 'permissions', timestamps: true, createdAt: 'created_at', updatedAt: false });
+  return Permission;
+}
+
+// ── Role ─────────────────────────────────────────────────────────────────────
+interface RoleAttrs { role_id: number; role_name?: string; is_system_role?: boolean; module_ids?: string; created_at?: Date; updated_at?: Date; }
+interface RoleCreate extends Optional<RoleAttrs, 'role_id'> {}
+class Role extends Model<RoleAttrs, RoleCreate> implements RoleAttrs {
+  public role_id!: number; public role_name?: string; public is_system_role?: boolean;
+  public module_ids?: string; public created_at?: Date; public updated_at?: Date;
+}
+function defineRole(seq: Sequelize) {
+  Role.init({
+    role_id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    role_name: { type: DataTypes.STRING(100), allowNull: true, unique: true },
+    is_system_role: { type: DataTypes.BOOLEAN, allowNull: true, defaultValue: false },
+    module_ids: { type: DataTypes.TEXT('long'), allowNull: true },
+  }, { sequelize: seq, tableName: 'roles', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return Role;
+}
+
+// ── UserRole ─────────────────────────────────────────────────────────────────
+interface UserRoleAttrs { id: number; user_id?: number; role_id?: number; created_at?: Date; }
+interface UserRoleCreate extends Optional<UserRoleAttrs, 'id'> {}
+class UserRole extends Model<UserRoleAttrs, UserRoleCreate> implements UserRoleAttrs {
+  public id!: number; public user_id?: number; public role_id?: number; public created_at?: Date;
+}
+function defineUserRole(seq: Sequelize) {
+  UserRole.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    user_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+    role_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+  }, { sequelize: seq, tableName: 'user_roles', timestamps: true, createdAt: 'created_at', updatedAt: false });
+  return UserRole;
+}
+
+// ── UserModulePermission ───────────────────────────────────────────────────────
+interface UserModulePermissionAttrs { id: number; user_id: number; role_id: number; module_id: number; can_view: boolean; can_edit: boolean; created_at?: Date; updated_at?: Date; }
+interface UserModulePermissionCreate extends Optional<UserModulePermissionAttrs, 'id'> {}
+class UserModulePermission extends Model<UserModulePermissionAttrs, UserModulePermissionCreate> implements UserModulePermissionAttrs {
+  public id!: number; public user_id!: number; public role_id!: number; public module_id!: number;
+  public can_view!: boolean; public can_edit!: boolean; public created_at?: Date; public updated_at?: Date;
+}
+function defineUserModulePermission(seq: Sequelize) {
+  UserModulePermission.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    user_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    role_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    module_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    can_view: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    can_edit: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  }, { sequelize: seq, tableName: 'user_module_permissions', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return UserModulePermission;
+}
+
+// ── VerifiedPhoneNumber ─────────────────────────────────────────────────────────
+interface VerifiedPhoneNumberAttrs { id: number; phone_number: string; verified_at: Date; created_at?: Date; updated_at?: Date; }
+interface VerifiedPhoneNumberCreate extends Optional<VerifiedPhoneNumberAttrs, 'id'> {}
+class VerifiedPhoneNumber extends Model<VerifiedPhoneNumberAttrs, VerifiedPhoneNumberCreate> implements VerifiedPhoneNumberAttrs {
+  public id!: number; public phone_number!: string; public verified_at!: Date; public created_at?: Date; public updated_at?: Date;
+}
+function defineVerifiedPhoneNumber(seq: Sequelize) {
+  VerifiedPhoneNumber.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    phone_number: { type: DataTypes.STRING(20), allowNull: false },
+    verified_at: { type: DataTypes.DATE, allowNull: false },
+  }, { sequelize: seq, tableName: 'verified_phone_numbers', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return VerifiedPhoneNumber;
 }
 
 // ── Institution (global) ──────────────────────────────────────────────────────
@@ -216,47 +343,63 @@ class TeacherClass extends Model<TcAttrs, TcCreate> implements TcAttrs {
   public class_id!: number; public subject_id!: number; public assigned_date?: Date; public is_active?: number;
 }
 function defineTeacherClass(seq: Sequelize) {
-  TeacherClass.init({ id: { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true }, teacher_id: { type: DataTypes.BIGINT, allowNull: false }, program_id: { type: DataTypes.BIGINT, allowNull: false }, academic_year_id: { type: DataTypes.BIGINT, allowNull: false }, class_id: { type: DataTypes.BIGINT, allowNull: false }, subject_id: { type: DataTypes.BIGINT, allowNull: false }, assigned_date: { type: DataTypes.DATEONLY, allowNull: true, defaultValue: DataTypes.NOW }, is_active: { type: DataTypes.TINYINT, defaultValue: 1 } }, { sequelize: seq, tableName: 'teacher_class_subjects', timestamps: false });
+  TeacherClass.init({ id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true }, teacher_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false }, program_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false, defaultValue: 1 }, academic_year_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false }, class_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false }, subject_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false }, assigned_date: { type: DataTypes.DATEONLY, allowNull: true }, is_active: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1 } }, { sequelize: seq, tableName: 'teacher_class_subjects', timestamps: false });
   return TeacherClass;
 }
 
 // ── StudentDailyAttendance ────────────────────────────────────────────────────
-interface SDAAttrs { id: number; attendance_id: string; student_id?: string; student_code?: string; student_name?: string; class_id?: number; attendance_date: Date; attendance_status: string; attendance_type?: string; marked_by?: string; marked_by_type?: string; remarks?: string; absence_reason?: string; check_in_time?: string; check_out_time?: string; late_minutes?: number; parent_notified?: number; sms_sent?: number; email_sent?: number; status?: number; is_trash?: number; created_by?: string; created_at?: Date; updated_at?: Date; }
+// NOTE: this table has no class_id column (confirmed via live schema — do not add
+// one back without also fixing the callers in attendance.controller.ts /
+// teacher-attendance.service.ts that currently filter/write class_id here).
+// NOTE: student_id is bigint (students.id), NOT the varchar student_id business
+// code used elsewhere (students.student_id / the JWT's resolved user_code).
+interface SDAAttrs { id: number; attendance_id: string; student_id: number; student_code: string; student_name?: string; attendance_date: Date; attendance_status?: string; attendance_type?: string; marked_by?: string; marked_by_type?: string; location_marked?: string; device_info?: string; remarks?: string; absence_reason?: string; leave_approval_required?: boolean; leave_approved_by?: string; leave_approved_at?: Date; check_in_time?: string; check_out_time?: string; late_minutes?: number; parent_notified?: number; parent_notification_sent_at?: Date; sms_sent?: number; email_sent?: number; approved_by?: string; approved_at?: Date; status?: number; is_trash?: number; created_by?: string; updated_by?: string; createdAt?: Date; updatedAt?: Date; }
 interface SDACreate extends Optional<SDAAttrs, 'id'> {}
 class StudentDailyAttendance extends Model<SDAAttrs, SDACreate> implements SDAAttrs {
-  public id!: number; public attendance_id!: string; public student_id?: string; public student_code?: string;
-  public student_name?: string; public class_id?: number; public attendance_date!: Date; public attendance_status!: string;
-  public attendance_type?: string; public marked_by?: string; public marked_by_type?: string; public remarks?: string;
-  public absence_reason?: string; public check_in_time?: string; public check_out_time?: string; public late_minutes?: number;
-  public parent_notified?: number; public sms_sent?: number; public email_sent?: number; public status?: number;
-  public is_trash?: number; public created_by?: string; public created_at?: Date; public updated_at?: Date;
+  public id!: number; public attendance_id!: string; public student_id!: number; public student_code!: string;
+  public student_name?: string; public attendance_date!: Date; public attendance_status?: string;
+  public attendance_type?: string; public marked_by?: string; public marked_by_type?: string;
+  public location_marked?: string; public device_info?: string; public remarks?: string;
+  public absence_reason?: string; public leave_approval_required?: boolean; public leave_approved_by?: string;
+  public leave_approved_at?: Date; public check_in_time?: string; public check_out_time?: string; public late_minutes?: number;
+  public parent_notified?: number; public parent_notification_sent_at?: Date; public sms_sent?: number; public email_sent?: number;
+  public approved_by?: string; public approved_at?: Date; public status?: number;
+  public is_trash?: number; public created_by?: string; public updated_by?: string; public createdAt?: Date; public updatedAt?: Date;
 }
 function defineStudentDailyAttendance(seq: Sequelize) {
   StudentDailyAttendance.init({
-    id: { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
-    attendance_id: { type: DataTypes.STRING(255), allowNull: false, unique: true, defaultValue: () => uuidv4() },
-    student_id: { type: DataTypes.STRING(50), allowNull: true },
-    student_code: { type: DataTypes.STRING(50), allowNull: true },
+    id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+    attendance_id: { type: DataTypes.STRING(50), allowNull: false, unique: true, defaultValue: () => uuidv4() },
+    student_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    student_code: { type: DataTypes.STRING(50), allowNull: false },
     student_name: { type: DataTypes.STRING(255), allowNull: true },
-    class_id: { type: DataTypes.BIGINT, allowNull: true },
     attendance_date: { type: DataTypes.DATEONLY, allowNull: false },
-    attendance_status: { type: DataTypes.ENUM('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'HOLIDAY', 'LEAVE'), allowNull: false },
-    attendance_type: { type: DataTypes.ENUM('MANUAL', 'BIOMETRIC', 'RFID', 'MOBILE_APP'), allowNull: true, defaultValue: 'MOBILE_APP' },
-    marked_by: { type: DataTypes.STRING(255), allowNull: true },
-    marked_by_type: { type: DataTypes.ENUM('TEACHER', 'ADMIN', 'SYSTEM', 'PARENT'), allowNull: true },
+    attendance_status: { type: DataTypes.ENUM('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'HOLIDAY', 'LEAVE'), allowNull: true, defaultValue: 'PRESENT' },
+    attendance_type: { type: DataTypes.ENUM('MANUAL', 'BIOMETRIC', 'RFID', 'MOBILE_APP'), allowNull: true, defaultValue: 'MANUAL' },
+    marked_by: { type: DataTypes.STRING(50), allowNull: true },
+    marked_by_type: { type: DataTypes.ENUM('TEACHER', 'ADMIN', 'SYSTEM', 'PARENT'), allowNull: true, defaultValue: 'TEACHER' },
+    location_marked: { type: DataTypes.STRING(255), allowNull: true },
+    device_info: { type: DataTypes.TEXT, allowNull: true },
     remarks: { type: DataTypes.TEXT, allowNull: true },
-    absence_reason: { type: DataTypes.STRING(500), allowNull: true },
+    absence_reason: { type: DataTypes.ENUM('SICK', 'FAMILY', 'EMERGENCY', 'PERSONAL', 'OTHER'), allowNull: true },
+    leave_approval_required: { type: DataTypes.BOOLEAN, allowNull: true, defaultValue: false },
+    leave_approved_by: { type: DataTypes.STRING(50), allowNull: true },
+    leave_approved_at: { type: DataTypes.DATE, allowNull: true },
     check_in_time: { type: DataTypes.TIME, allowNull: true },
     check_out_time: { type: DataTypes.TIME, allowNull: true },
-    late_minutes: { type: DataTypes.INTEGER, allowNull: true },
-    parent_notified: { type: DataTypes.TINYINT, defaultValue: 0 },
-    sms_sent: { type: DataTypes.TINYINT, defaultValue: 0 },
-    email_sent: { type: DataTypes.TINYINT, defaultValue: 0 },
-    status: { type: DataTypes.TINYINT, defaultValue: 1 },
-    is_trash: { type: DataTypes.TINYINT, defaultValue: 0 },
-    created_by: { type: DataTypes.STRING(255), allowNull: true },
+    late_minutes: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+    parent_notified: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+    parent_notification_sent_at: { type: DataTypes.DATE, allowNull: true },
+    sms_sent: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+    email_sent: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+    approved_by: { type: DataTypes.STRING(50), allowNull: true },
+    approved_at: { type: DataTypes.DATE, allowNull: true },
+    status: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1 },
+    is_trash: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+    created_by: { type: DataTypes.STRING(50), allowNull: true, defaultValue: 'SYSTEM' },
+    updated_by: { type: DataTypes.STRING(50), allowNull: true },
   }, {
-    sequelize: seq, tableName: 'student_daily_attendance', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at',
+    sequelize: seq, tableName: 'student_daily_attendance', timestamps: true, createdAt: 'createdAt', updatedAt: 'updatedAt',
     hooks: {
       beforeBulkCreate: (instances: any[]) => {
         const validDateRegex = /^\d{4}-\d{2}-\d{2}$/;
@@ -271,105 +414,259 @@ function defineStudentDailyAttendance(seq: Sequelize) {
 }
 
 // ── StaffDailyAttendance ──────────────────────────────────────────────────────
-interface StaffAttrs { id: number; attendance_id: string; employee_id: string; employee_code?: string; employee_name?: string; department_id?: number; designation?: string; attendance_date: Date; attendance_status: string; check_in_time?: string; check_out_time?: string; late_minutes?: number; attendance_type?: string; marked_by?: string; marked_by_type?: string; remarks?: string; absence_reason?: string; status?: number; created_by?: string; created_at?: Date; updated_at?: Date; }
+interface StaffAttrs { id: number; attendance_id: string; employee_id: string; employee_code?: string; employee_name?: string; department_id?: number; designation?: string; attendance_date: Date; attendance_status: string; check_in_time?: string; check_out_time?: string; late_minutes?: number; attendance_type?: string; marked_by?: string; marked_by_type?: string; remarks?: string; absence_reason?: string; status?: number; is_trash?: number; created_by?: string; created_at?: Date; updated_at?: Date; }
 interface StaffCreate extends Optional<StaffAttrs, 'id'> {}
 class StaffDailyAttendance extends Model<StaffAttrs, StaffCreate> implements StaffAttrs {
   public id!: number; public attendance_id!: string; public employee_id!: string; public employee_code?: string;
   public employee_name?: string; public department_id?: number; public designation?: string; public attendance_date!: Date;
   public attendance_status!: string; public check_in_time?: string; public check_out_time?: string; public late_minutes?: number;
   public attendance_type?: string; public marked_by?: string; public marked_by_type?: string; public remarks?: string;
-  public absence_reason?: string; public status?: number; public created_by?: string; public created_at?: Date; public updated_at?: Date;
+  public absence_reason?: string; public status?: number; public is_trash?: number; public created_by?: string; public created_at?: Date; public updated_at?: Date;
 }
 function defineStaffDailyAttendance(seq: Sequelize) {
   StaffDailyAttendance.init({
-    id: { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
-    attendance_id: { type: DataTypes.STRING(255), allowNull: false, unique: true, defaultValue: () => uuidv4() },
+    id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+    attendance_id: { type: DataTypes.STRING(100), allowNull: false, unique: true, defaultValue: () => uuidv4() },
     employee_id: { type: DataTypes.STRING(50), allowNull: false },
     employee_code: { type: DataTypes.STRING(50), allowNull: true },
     employee_name: { type: DataTypes.STRING(200), allowNull: true },
-    department_id: { type: DataTypes.BIGINT, allowNull: true },
+    department_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
     designation: { type: DataTypes.STRING(100), allowNull: true },
     attendance_date: { type: DataTypes.DATEONLY, allowNull: false },
-    attendance_status: { type: DataTypes.ENUM('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'HOLIDAY', 'LEAVE'), allowNull: false },
+    attendance_status: { type: DataTypes.ENUM('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'HOLIDAY', 'LEAVE', 'ON_DUTY'), allowNull: false },
     check_in_time: { type: DataTypes.TIME, allowNull: true },
     check_out_time: { type: DataTypes.TIME, allowNull: true },
-    late_minutes: { type: DataTypes.INTEGER, allowNull: true },
-    attendance_type: { type: DataTypes.ENUM('MANUAL', 'BIOMETRIC', 'RFID', 'MOBILE_APP'), allowNull: true, defaultValue: 'MOBILE_APP' },
-    marked_by: { type: DataTypes.STRING(255), allowNull: true },
-    marked_by_type: { type: DataTypes.ENUM('ADMIN', 'SYSTEM', 'SELF'), allowNull: true },
+    late_minutes: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
+    attendance_type: { type: DataTypes.ENUM('MANUAL', 'BIOMETRIC', 'RFID', 'MOBILE_APP'), allowNull: true, defaultValue: 'MANUAL' },
+    marked_by: { type: DataTypes.STRING(100), allowNull: true },
+    marked_by_type: { type: DataTypes.ENUM('ADMIN', 'SYSTEM', 'SELF'), allowNull: true, defaultValue: 'ADMIN' },
     remarks: { type: DataTypes.TEXT, allowNull: true },
-    absence_reason: { type: DataTypes.STRING(500), allowNull: true },
-    status: { type: DataTypes.TINYINT, defaultValue: 1 },
-    created_by: { type: DataTypes.STRING(255), allowNull: true },
+    absence_reason: { type: DataTypes.STRING(255), allowNull: true },
+    status: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1 },
+    is_trash: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+    created_by: { type: DataTypes.STRING(100), allowNull: true },
   }, { sequelize: seq, tableName: 'staff_daily_attendance', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
   return StaffDailyAttendance;
 }
 
 // ── TeacherAssignment ─────────────────────────────────────────────────────────
-interface TAAttrs { id: number; assignment_id?: string; title: string; description?: string; detailed_instructions?: string; type?: string; teacher_id: number; class_id: number; subject_id?: number; semester_id?: number; section_id?: number; program_id?: number; academic_year_id?: number; due_date?: Date; due_time?: string; maximum_marks?: number; allow_late_submissions?: number; file_url?: string; send_notification?: number; is_active?: number; created_at?: Date; updated_at?: Date; }
+// NOTE: no assignment_id column exists on this table (confirmed via live schema) —
+// removed a phantom field that was in the old model and unused by any call site.
+interface TAAttrs { id: number; title?: string; description?: string; detailed_instructions?: string; type?: string; teacher_id: number; class_id: number; subject_id?: number; semester_id: number; section_id?: number; program_id: number; academic_year_id: number; due_date?: Date; due_time?: string; maximum_marks?: number; allow_late_submissions?: number; send_notification?: number; is_active?: number; created_at?: Date; updated_at?: Date; }
 interface TACreate extends Optional<TAAttrs, 'id'> {}
 class TeacherAssignment extends Model<TAAttrs, TACreate> implements TAAttrs {
-  public id!: number; public assignment_id?: string; public title!: string; public description?: string;
+  public id!: number; public title?: string; public description?: string;
   public detailed_instructions?: string; public type?: string; public teacher_id!: number; public class_id!: number;
-  public subject_id?: number; public semester_id?: number; public section_id?: number; public program_id?: number;
-  public academic_year_id?: number; public due_date?: Date; public due_time?: string; public maximum_marks?: number;
-  public allow_late_submissions?: number; public file_url?: string; public send_notification?: number; public is_active?: number;
+  public subject_id?: number; public semester_id!: number; public section_id?: number; public program_id!: number;
+  public academic_year_id!: number; public due_date?: Date; public due_time?: string; public maximum_marks?: number;
+  public allow_late_submissions?: number; public send_notification?: number; public is_active?: number;
   public created_at?: Date; public updated_at?: Date;
 }
 function defineTeacherAssignment(seq: Sequelize) {
   TeacherAssignment.init({
-    id: { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
-    assignment_id: { type: DataTypes.STRING(100), allowNull: true, unique: true },
-    title: { type: DataTypes.STRING(255), allowNull: false },
+    id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+    title: { type: DataTypes.STRING(255), allowNull: true },
     description: { type: DataTypes.TEXT, allowNull: true },
     detailed_instructions: { type: DataTypes.TEXT, allowNull: true },
     type: { type: DataTypes.ENUM('Assignment', 'Homework'), allowNull: true },
-    teacher_id: { type: DataTypes.BIGINT, allowNull: false },
-    class_id: { type: DataTypes.BIGINT, allowNull: false },
-    subject_id: { type: DataTypes.BIGINT, allowNull: true },
-    semester_id: { type: DataTypes.BIGINT, allowNull: true },
-    section_id: { type: DataTypes.BIGINT, allowNull: true },
-    program_id: { type: DataTypes.BIGINT, allowNull: true },
-    academic_year_id: { type: DataTypes.BIGINT, allowNull: true },
+    teacher_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    class_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    subject_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+    semester_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    section_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+    program_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    academic_year_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
     due_date: { type: DataTypes.DATEONLY, allowNull: true },
     due_time: { type: DataTypes.TIME, allowNull: true },
-    maximum_marks: { type: DataTypes.INTEGER, defaultValue: 100 },
-    allow_late_submissions: { type: DataTypes.TINYINT, defaultValue: 0 },
-    file_url: { type: DataTypes.STRING(500), allowNull: true },
-    send_notification: { type: DataTypes.TINYINT, defaultValue: 1 },
-    is_active: { type: DataTypes.TINYINT, defaultValue: 1 },
+    maximum_marks: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 100 },
+    allow_late_submissions: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+    send_notification: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1 },
+    is_active: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 1 },
   }, { sequelize: seq, tableName: 'teacher_assignments', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
   return TeacherAssignment;
 }
 
-// ── AssignmentSubmission ──────────────────────────────────────────────────────
-interface ASAttrs { id: number; submission_id?: string; teacher_assignment_id: number; student_id: string; student_name?: string; submission_text?: string; file_url?: string; submitted_at?: Date; marks_obtained?: number; grade?: string; feedback?: string; is_late_submission?: number; status?: string; graded_at?: Date; graded_by?: number; created_at?: Date; updated_at?: Date; }
+// ── AssignmentSubmission (StudentAssignmentSubmission) ────────────────────────
+// NOTE: student_id is bigint (students.id), NOT the varchar student_id business
+// code used elsewhere. No submission_id or student_name columns exist on this
+// table (confirmed live) — both removed; neither was referenced by any call site.
+interface ASAttrs { id: number; teacher_assignment_id: number; student_id: number; submission_text?: string; file_url?: string; submitted_at?: Date; marks_obtained?: number; grade?: string; feedback?: string; teacher_remarks?: string; is_late_submission?: number; status?: string; graded_at?: Date; graded_by?: number; created_at?: Date; updated_at?: Date; }
 interface ASCreate extends Optional<ASAttrs, 'id'> {}
 class AssignmentSubmission extends Model<ASAttrs, ASCreate> implements ASAttrs {
-  public id!: number; public submission_id?: string; public teacher_assignment_id!: number; public student_id!: string;
-  public student_name?: string; public submission_text?: string; public file_url?: string; public submitted_at?: Date;
-  public marks_obtained?: number; public grade?: string; public feedback?: string; public is_late_submission?: number;
-  public status?: string; public graded_at?: Date; public graded_by?: number; public created_at?: Date; public updated_at?: Date;
+  public id!: number; public teacher_assignment_id!: number; public student_id!: number;
+  public submission_text?: string; public file_url?: string; public submitted_at?: Date;
+  public marks_obtained?: number; public grade?: string; public feedback?: string; public teacher_remarks?: string;
+  public is_late_submission?: number; public status?: string; public graded_at?: Date; public graded_by?: number;
+  public created_at?: Date; public updated_at?: Date;
 }
 function defineAssignmentSubmission(seq: Sequelize) {
   AssignmentSubmission.init({
-    id: { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
-    submission_id: { type: DataTypes.STRING(100), allowNull: true, unique: true },
-    teacher_assignment_id: { type: DataTypes.BIGINT, allowNull: false },
-    student_id: { type: DataTypes.STRING(50), allowNull: false },
-    student_name: { type: DataTypes.STRING(255), allowNull: true },
+    id: { type: DataTypes.BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
+    teacher_assignment_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    student_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
     submission_text: { type: DataTypes.TEXT, allowNull: true },
     file_url: { type: DataTypes.STRING(500), allowNull: true },
     submitted_at: { type: DataTypes.DATE, allowNull: true },
     marks_obtained: { type: DataTypes.INTEGER, allowNull: true },
     grade: { type: DataTypes.STRING(10), allowNull: true },
     feedback: { type: DataTypes.TEXT, allowNull: true },
-    is_late_submission: { type: DataTypes.TINYINT, defaultValue: 0 },
-    status: { type: DataTypes.ENUM('not_submitted', 'submitted', 'graded'), defaultValue: 'not_submitted' },
+    teacher_remarks: { type: DataTypes.TEXT, allowNull: true },
+    is_late_submission: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+    status: { type: DataTypes.ENUM('not_submitted', 'submitted', 'graded'), allowNull: true, defaultValue: 'not_submitted' },
     graded_at: { type: DataTypes.DATE, allowNull: true },
     graded_by: { type: DataTypes.BIGINT, allowNull: true },
   }, { sequelize: seq, tableName: 'student_assignment_submissions', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
   return AssignmentSubmission;
+}
+
+// ── TeacherAssignmentAttachment ───────────────────────────────────────────────
+interface TAAAttrs { id: number; teacher_assignment_id: number; file_name: string; file_url: string; file_size?: number; file_type?: string; uploaded_at?: Date; }
+interface TAACreate extends Optional<TAAAttrs, 'id'> {}
+class TeacherAssignmentAttachment extends Model<TAAAttrs, TAACreate> implements TAAAttrs {
+  public id!: number; public teacher_assignment_id!: number; public file_name!: string; public file_url!: string;
+  public file_size?: number; public file_type?: string; public uploaded_at?: Date;
+}
+function defineTeacherAssignmentAttachment(seq: Sequelize) {
+  TeacherAssignmentAttachment.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    teacher_assignment_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    file_name: { type: DataTypes.STRING(255), allowNull: false },
+    file_url: { type: DataTypes.STRING(500), allowNull: false },
+    file_size: { type: DataTypes.BIGINT, allowNull: true },
+    file_type: { type: DataTypes.STRING(100), allowNull: true },
+  }, { sequelize: seq, tableName: 'teacher_assignment_attachments', timestamps: true, createdAt: 'uploaded_at', updatedAt: false });
+  return TeacherAssignmentAttachment;
+}
+
+// ── ReadmissionRequest ─────────────────────────────────────────────────────────
+interface RRAttrs { id: number; student_id: number; program_id: number; department_id?: number; from_class_id: number; to_class_id: number; from_semester_id: number; to_semester_id: number; academic_year_id: number; status?: string; student_confirmed?: boolean; student_confirmed_at?: Date; fee_required?: boolean; fee_amount?: number; fee_paid?: boolean; remarks?: string; created_at?: Date; updated_at?: Date; }
+interface RRCreate extends Optional<RRAttrs, 'id'> {}
+class ReadmissionRequest extends Model<RRAttrs, RRCreate> implements RRAttrs {
+  public id!: number; public student_id!: number; public program_id!: number; public department_id?: number;
+  public from_class_id!: number; public to_class_id!: number; public from_semester_id!: number; public to_semester_id!: number;
+  public academic_year_id!: number; public status?: string; public student_confirmed?: boolean; public student_confirmed_at?: Date;
+  public fee_required?: boolean; public fee_amount?: number; public fee_paid?: boolean; public remarks?: string;
+  public created_at?: Date; public updated_at?: Date;
+}
+function defineReadmissionRequest(seq: Sequelize) {
+  ReadmissionRequest.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    student_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    program_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    department_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+    from_class_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    to_class_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    from_semester_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    to_semester_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    academic_year_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    status: { type: DataTypes.ENUM('PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'), allowNull: false, defaultValue: 'PENDING' },
+    student_confirmed: { type: DataTypes.BOOLEAN, allowNull: true },
+    student_confirmed_at: { type: DataTypes.DATEONLY, allowNull: true },
+    fee_required: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    fee_amount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+    fee_paid: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    remarks: { type: DataTypes.TEXT, allowNull: true },
+  }, { sequelize: seq, tableName: 'readmission_requests', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return ReadmissionRequest;
+}
+
+// ── StudentAddress ─────────────────────────────────────────────────────────────
+interface SAddrAttrs { id: number; student_id?: number; user_id: number; address_type: string; address_line?: string; village?: string; post_office?: string; police_station?: string; district?: string; state?: string; pincode?: string; municipality_block?: string; created_at?: Date; updated_at?: Date; }
+interface SAddrCreate extends Optional<SAddrAttrs, 'id'> {}
+class StudentAddress extends Model<SAddrAttrs, SAddrCreate> implements SAddrAttrs {
+  public id!: number; public student_id?: number; public user_id!: number; public address_type!: string;
+  public address_line?: string; public village?: string; public post_office?: string; public police_station?: string;
+  public district?: string; public state?: string; public pincode?: string; public municipality_block?: string;
+  public created_at?: Date; public updated_at?: Date;
+}
+function defineStudentAddress(seq: Sequelize) {
+  StudentAddress.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    student_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+    user_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    address_type: { type: DataTypes.ENUM('PERMANENT', 'PRESENT'), allowNull: false },
+    address_line: { type: DataTypes.TEXT, allowNull: true },
+    village: { type: DataTypes.STRING(150), allowNull: true },
+    post_office: { type: DataTypes.STRING(150), allowNull: true },
+    police_station: { type: DataTypes.STRING(150), allowNull: true },
+    district: { type: DataTypes.STRING(150), allowNull: true },
+    state: { type: DataTypes.STRING(150), allowNull: true },
+    pincode: { type: DataTypes.STRING(20), allowNull: true },
+    municipality_block: { type: DataTypes.STRING(150), allowNull: true },
+  }, { sequelize: seq, tableName: 'student_addresses', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return StudentAddress;
+}
+
+// ── StudentGuardian ─────────────────────────────────────────────────────────────
+interface SGAttrs { id: number; student_id?: number; user_id: number; relationship: string; name: string; qualification?: string; email?: string; mobile?: string; is_primary_guardian?: boolean; created_at?: Date; updated_at?: Date; }
+interface SGCreate extends Optional<SGAttrs, 'id'> {}
+class StudentGuardian extends Model<SGAttrs, SGCreate> implements SGAttrs {
+  public id!: number; public student_id?: number; public user_id!: number; public relationship!: string; public name!: string;
+  public qualification?: string; public email?: string; public mobile?: string; public is_primary_guardian?: boolean;
+  public created_at?: Date; public updated_at?: Date;
+}
+function defineStudentGuardian(seq: Sequelize) {
+  StudentGuardian.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    student_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: true },
+    user_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    relationship: { type: DataTypes.ENUM('FATHER', 'MOTHER', 'GUARDIAN'), allowNull: false },
+    name: { type: DataTypes.STRING(255), allowNull: false },
+    qualification: { type: DataTypes.STRING(100), allowNull: true },
+    email: { type: DataTypes.STRING(150), allowNull: true },
+    mobile: { type: DataTypes.STRING(20), allowNull: true },
+    is_primary_guardian: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  }, { sequelize: seq, tableName: 'student_guardians', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return StudentGuardian;
+}
+
+// ── StudentApplication ─────────────────────────────────────────────────────────
+interface SApAttrs { id: number; user_id: number; academic_year_id: number; program_id: number; degree_type: string; program_type: string; department_id: number; application_status?: string; is_locked?: boolean; created_at?: Date; updated_at?: Date; }
+interface SApCreate extends Optional<SApAttrs, 'id'> {}
+class StudentApplication extends Model<SApAttrs, SApCreate> implements SApAttrs {
+  public id!: number; public user_id!: number; public academic_year_id!: number; public program_id!: number;
+  public degree_type!: string; public program_type!: string; public department_id!: number;
+  public application_status?: string; public is_locked?: boolean; public created_at?: Date; public updated_at?: Date;
+}
+function defineStudentApplication(seq: Sequelize) {
+  StudentApplication.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    user_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    academic_year_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    program_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    degree_type: { type: DataTypes.STRING(16), allowNull: false },
+    program_type: { type: DataTypes.STRING(32), allowNull: false },
+    department_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    application_status: { type: DataTypes.STRING(32), allowNull: false, defaultValue: 'IN_PROGRESS' },
+    is_locked: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  }, { sequelize: seq, tableName: 'student_applications', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return StudentApplication;
+}
+
+// ── StudentApplicationStatus ─────────────────────────────────────────────────────
+interface SASAttrs { id: number; user_id: number; application_id?: string; preview_confirmed?: boolean; preview_confirmed_at?: Date; subjects_selected?: boolean; subjects_selected_at?: Date; final_submitted?: boolean; final_submitted_at?: Date; status?: string; created_at?: Date; updated_at?: Date; }
+interface SASCreate extends Optional<SASAttrs, 'id'> {}
+class StudentApplicationStatus extends Model<SASAttrs, SASCreate> implements SASAttrs {
+  public id!: number; public user_id!: number; public application_id?: string;
+  public preview_confirmed?: boolean; public preview_confirmed_at?: Date;
+  public subjects_selected?: boolean; public subjects_selected_at?: Date;
+  public final_submitted?: boolean; public final_submitted_at?: Date;
+  public status?: string; public created_at?: Date; public updated_at?: Date;
+}
+function defineStudentApplicationStatus(seq: Sequelize) {
+  StudentApplicationStatus.init({
+    id: { type: DataTypes.BIGINT.UNSIGNED, primaryKey: true, autoIncrement: true, allowNull: false },
+    user_id: { type: DataTypes.BIGINT.UNSIGNED, allowNull: false },
+    application_id: { type: DataTypes.STRING(50), allowNull: true },
+    preview_confirmed: { type: DataTypes.BOOLEAN, allowNull: true, defaultValue: false },
+    preview_confirmed_at: { type: DataTypes.DATE, allowNull: true },
+    subjects_selected: { type: DataTypes.BOOLEAN, allowNull: true, defaultValue: false },
+    subjects_selected_at: { type: DataTypes.DATE, allowNull: true },
+    final_submitted: { type: DataTypes.BOOLEAN, allowNull: true, defaultValue: false },
+    final_submitted_at: { type: DataTypes.DATE, allowNull: true },
+    status: { type: DataTypes.ENUM('REGISTRATION_COMPLETED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED', 'ADMITTED'), allowNull: true },
+  }, { sequelize: seq, tableName: 'student_application_status', timestamps: true, createdAt: 'created_at', updatedAt: 'updated_at' });
+  return StudentApplicationStatus;
 }
 
 // ── RepositoryCategory ────────────────────────────────────────────────────────
@@ -581,7 +878,13 @@ const tenantModelCache = new Map<string, TenantModels>();
 
 function buildTenantModels(seq: Sequelize) {
   const User_ = defineUser(seq);
-  const OtpRequest_ = defineOtpRequest(seq);
+  const PhoneOtpRequest_ = definePhoneOtpRequest(seq);
+  const EmailOtpRequest_ = defineEmailOtpRequest(seq);
+  const Permission_ = definePermission(seq);
+  const Role_ = defineRole(seq);
+  const UserRole_ = defineUserRole(seq);
+  const UserModulePermission_ = defineUserModulePermission(seq);
+  const VerifiedPhoneNumber_ = defineVerifiedPhoneNumber(seq);
   const Student_ = defineStudent(seq);
   const Teacher_ = defineTeacher(seq);
   const Department_ = defineDepartment(seq);
@@ -593,6 +896,12 @@ function buildTenantModels(seq: Sequelize) {
   const StaffDailyAttendance_ = defineStaffDailyAttendance(seq);
   const TeacherAssignment_ = defineTeacherAssignment(seq);
   const AssignmentSubmission_ = defineAssignmentSubmission(seq);
+  const TeacherAssignmentAttachment_ = defineTeacherAssignmentAttachment(seq);
+  const ReadmissionRequest_ = defineReadmissionRequest(seq);
+  const StudentAddress_ = defineStudentAddress(seq);
+  const StudentGuardian_ = defineStudentGuardian(seq);
+  const StudentApplication_ = defineStudentApplication(seq);
+  const StudentApplicationStatus_ = defineStudentApplicationStatus(seq);
   const RepositoryCategory_ = defineRepositoryCategory(seq);
   const RepositoryFile_ = defineRepositoryFile(seq);
   const FeeHead_ = defineFeeHead(seq);
@@ -608,6 +917,16 @@ function buildTenantModels(seq: Sequelize) {
   const Notice_ = defineNotice(seq);
 
   // Associations
+  User_.hasMany(UserRole_, { foreignKey: 'user_id' });
+  UserRole_.belongsTo(User_, { foreignKey: 'user_id' });
+  Role_.hasMany(UserRole_, { foreignKey: 'role_id' });
+  UserRole_.belongsTo(Role_, { foreignKey: 'role_id' });
+
+  User_.hasMany(UserModulePermission_, { foreignKey: 'user_id' });
+  Role_.hasMany(UserModulePermission_, { foreignKey: 'role_id' });
+  UserModulePermission_.belongsTo(User_, { foreignKey: 'user_id' });
+  UserModulePermission_.belongsTo(Role_, { foreignKey: 'role_id' });
+
   Student_.belongsTo(Department_, { foreignKey: 'department_id', as: 'department' });
   Department_.hasMany(Student_, { foreignKey: 'department_id', as: 'students' });
 
@@ -620,8 +939,10 @@ function buildTenantModels(seq: Sequelize) {
   TeacherClass_.belongsTo(Subject_, { foreignKey: 'subject_id', as: 'subject' });
   Teacher_.belongsTo(Department_, { foreignKey: 'department_id', as: 'department' });
 
-  StudentDailyAttendance_.belongsTo(Student_, { foreignKey: 'student_id', targetKey: 'student_id', as: 'student' });
-  Student_.hasMany(StudentDailyAttendance_, { foreignKey: 'student_id', sourceKey: 'student_id', as: 'attendances' });
+  // student_daily_attendance.student_id is students.id (numeric PK), not the
+  // varchar students.student_id business code — see model NOTE.
+  StudentDailyAttendance_.belongsTo(Student_, { foreignKey: 'student_id', targetKey: 'id', as: 'student' });
+  Student_.hasMany(StudentDailyAttendance_, { foreignKey: 'student_id', sourceKey: 'id', as: 'attendances' });
 
   Teacher_.hasMany(TeacherAssignment_, { foreignKey: 'teacher_id', as: 'assignments' });
   TeacherAssignment_.belongsTo(Teacher_, { foreignKey: 'teacher_id', as: 'teacher' });
@@ -629,6 +950,8 @@ function buildTenantModels(seq: Sequelize) {
   TeacherAssignment_.belongsTo(Subject_, { foreignKey: 'subject_id', as: 'subject' });
   TeacherAssignment_.hasMany(AssignmentSubmission_, { foreignKey: 'teacher_assignment_id', as: 'submissions' });
   AssignmentSubmission_.belongsTo(TeacherAssignment_, { foreignKey: 'teacher_assignment_id', as: 'assignment' });
+  TeacherAssignment_.hasMany(TeacherAssignmentAttachment_, { foreignKey: 'teacher_assignment_id', as: 'attachments' });
+  TeacherAssignmentAttachment_.belongsTo(TeacherAssignment_, { foreignKey: 'teacher_assignment_id', as: 'assignment' });
 
   FeeCollection_.belongsTo(FeeHead_, { foreignKey: 'fee_head_id', as: 'feeHead' });
   FeeHead_.hasMany(FeeCollection_, { foreignKey: 'fee_head_id', as: 'collections' });
@@ -644,11 +967,18 @@ function buildTenantModels(seq: Sequelize) {
   MessageReadStatus_.belongsTo(Message_, { foreignKey: 'message_id', as: 'message' });
 
   return {
-    User: User_, OtpRequest: OtpRequest_, Student: Student_, Teacher: Teacher_,
+    User: User_, PhoneOtpRequest: PhoneOtpRequest_, EmailOtpRequest: EmailOtpRequest_,
+    Permission: Permission_, Role: Role_, UserRole: UserRole_,
+    UserModulePermission: UserModulePermission_, VerifiedPhoneNumber: VerifiedPhoneNumber_,
+    Student: Student_, Teacher: Teacher_,
     Department: Department_, Subject: Subject_, Class: SchoolClass_,
     StudentSubject: StudentSubject_, TeacherClass: TeacherClass_,
     StudentDailyAttendance: StudentDailyAttendance_, StaffDailyAttendance: StaffDailyAttendance_,
     TeacherAssignment: TeacherAssignment_, AssignmentSubmission: AssignmentSubmission_,
+    TeacherAssignmentAttachment: TeacherAssignmentAttachment_,
+    ReadmissionRequest: ReadmissionRequest_, StudentAddress: StudentAddress_,
+    StudentGuardian: StudentGuardian_, StudentApplication: StudentApplication_,
+    StudentApplicationStatus: StudentApplicationStatus_,
     RepositoryCategory: RepositoryCategory_, RepositoryFile: RepositoryFile_,
     FeeHead: FeeHead_, FeeCollection: FeeCollection_, Receipt: Receipt_, LedgerEntry: LedgerEntry_,
     Payment: Payment_, PaymentTransaction: PaymentTransaction_,
@@ -678,9 +1008,12 @@ export function getGlobalModels() {
 
 // Re-export class types for use in service type annotations
 export type {
-  User, OtpRequest, Institution, Student, Teacher, Department, Subject,
+  User, PhoneOtpRequest, EmailOtpRequest, Permission, Role, UserRole, UserModulePermission,
+  VerifiedPhoneNumber, Institution, Student, Teacher, Department, Subject,
   SchoolClass as Class, StudentSubject, TeacherClass, StudentDailyAttendance, StaffDailyAttendance,
-  TeacherAssignment, AssignmentSubmission, RepositoryCategory, RepositoryFile,
+  TeacherAssignment, AssignmentSubmission, TeacherAssignmentAttachment,
+  ReadmissionRequest, StudentAddress, StudentGuardian, StudentApplication, StudentApplicationStatus,
+  RepositoryCategory, RepositoryFile,
   FeeHead, FeeCollection, Receipt, LedgerEntry, Payment, PaymentTransaction,
   Conversation, ConversationParticipant, Message, MessageReadStatus, Notice,
 };
