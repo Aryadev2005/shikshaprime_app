@@ -1,0 +1,1511 @@
+openapi: 3.0.0
+info:
+  title: Library Management Service API
+  description: Comprehensive API documentation for Library Management Service in ShikshaPrime College Management System, supporting Koha Integrated Library System (ILS) bi-directional synchronization, patron mapping, circulation checkouts/renewals/returns, holds, clearance certification, and direct Koha borrower management.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata endpoints
+  - name: Students & Catalog
+    description: Student library clearance statuses, active loans, fines, and catalog book searching
+  - name: Circulation
+    description: Book issuance, renewals, and returns management
+  - name: Holds & Reservations
+    description: Place and cancel bibliographic item holds for patrons
+  - name: Clearance Logs
+    description: Student library dues clearance logs and automated synchronization
+  - name: Patron Mappings
+    description: Local student profiles to Koha ILS borrower record mappings
+  - name: Koha Settings
+    description: Koha API connection credentials and ILS integration configuration
+  - name: Koha Borrowers & ILS
+    description: Koha ILS connectivity health, defaulters list, patron search, and direct borrower CRUD
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: An error occurred
+      additionalProperties: true
+
+    CreatePatronRequest:
+      type: object
+      required:
+        - student_id
+        - koha_patron_id
+        - patron_type
+      properties:
+        student_id:
+          type: integer
+          description: Local student primary key ID
+          example: 1
+        koha_patron_id:
+          type: string
+          description: Koha ILS borrower borrowernumber or cardnumber
+          example: "KOHA-2026-001"
+        patron_type:
+          type: string
+          enum: [STUDENT, STAFF]
+          example: STUDENT
+        remarks:
+          type: string
+          nullable: true
+          example: "Mapped during batch intake"
+
+    UpdatePatronRequest:
+      type: object
+      properties:
+        student_id:
+          type: integer
+          example: 1
+        koha_patron_id:
+          type: string
+          example: "KOHA-2026-001"
+        patron_type:
+          type: string
+          enum: [STUDENT, STAFF]
+          example: STUDENT
+        is_active:
+          type: integer
+          enum: [0, 1]
+          example: 1
+        remarks:
+          type: string
+          example: "Updated mapping record"
+
+    CreateKohaSettingRequest:
+      type: object
+      required:
+        - setting_key
+      properties:
+        setting_key:
+          type: string
+          example: "KOHA_API_URL"
+        setting_value:
+          type: string
+          example: "http://koha.library.internal:8080"
+        setting_group:
+          type: string
+          example: "API"
+        description:
+          type: string
+          example: "Koha ILS REST API base URL"
+        is_encrypted:
+          type: integer
+          enum: [0, 1]
+          default: 0
+          example: 0
+        is_active:
+          type: integer
+          enum: [0, 1]
+          default: 1
+          example: 1
+
+    UpdateKohaSettingRequest:
+      type: object
+      properties:
+        setting_value:
+          type: string
+          example: "http://koha.library.internal:8080"
+        setting_group:
+          type: string
+          example: "API"
+        description:
+          type: string
+          example: "Updated Koha REST API endpoint"
+        is_encrypted:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        is_active:
+          type: integer
+          enum: [0, 1]
+          example: 1
+
+    CreateClearanceLogRequest:
+      type: object
+      required:
+        - student_id
+        - has_pending_books
+        - pending_books_count
+        - pending_fine_amount
+        - is_clear
+        - context
+      properties:
+        student_id:
+          type: integer
+          example: 1
+        koha_patron_id:
+          type: string
+          nullable: true
+          example: "KOHA-2026-001"
+        has_pending_books:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        pending_books_count:
+          type: integer
+          example: 0
+        pending_fine_amount:
+          type: number
+          example: 0.00
+        is_clear:
+          type: integer
+          enum: [0, 1]
+          example: 1
+        context:
+          type: string
+          enum: [RESULT_PUBLISH, ADMIT_CARD, GRADUATION, MANUAL_CHECK, OTHER]
+          example: ADMIT_CARD
+        checked_by:
+          type: integer
+          nullable: true
+          example: 1
+        remarks:
+          type: string
+          nullable: true
+          example: "No pending library dues verified"
+
+    UpdateClearanceLogRequest:
+      type: object
+      properties:
+        has_pending_books:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        pending_books_count:
+          type: integer
+          example: 0
+        pending_fine_amount:
+          type: number
+          example: 0.00
+        is_clear:
+          type: integer
+          enum: [0, 1]
+          example: 1
+        context:
+          type: string
+          enum: [RESULT_PUBLISH, ADMIT_CARD, GRADUATION, MANUAL_CHECK, OTHER]
+          example: MANUAL_CHECK
+        remarks:
+          type: string
+          example: "Clearance updated"
+
+    IssueBookRequest:
+      type: object
+      required:
+        - patron_id
+        - item_id
+      properties:
+        patron_id:
+          type: string
+          description: Koha borrower ID / cardnumber
+          example: "101"
+        item_id:
+          type: string
+          description: Koha accession item barcode or itemnumber
+          example: "BK-908234"
+
+    PlaceHoldRequest:
+      type: object
+      required:
+        - patron_id
+        - biblio_id
+      properties:
+        patron_id:
+          type: string
+          description: Koha borrower ID / cardnumber
+          example: "101"
+        biblio_id:
+          type: string
+          description: Koha bibliographic record ID
+          example: "550"
+        pickup_library_id:
+          type: string
+          nullable: true
+          description: Library branch identifier for pickup
+          example: "MAIN"
+
+    CreateKohaBorrowerRequest:
+      type: object
+      required:
+        - firstname
+        - surname
+      properties:
+        firstname:
+          type: string
+          example: "John"
+        surname:
+          type: string
+          example: "Doe"
+        cardnumber:
+          type: string
+          nullable: true
+          example: "LIB-2026-001"
+        category_id:
+          type: string
+          nullable: true
+          example: "STU"
+        library_id:
+          type: string
+          nullable: true
+          example: "MAIN"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "john.doe@example.com"
+        phone:
+          type: string
+          nullable: true
+          example: "9876543210"
+        address:
+          type: string
+          nullable: true
+          example: "123 North Hall Street"
+        city:
+          type: string
+          nullable: true
+          example: "Bangalore"
+        date_of_birth:
+          type: string
+          format: date
+          nullable: true
+          example: "2004-05-15"
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2027-06-30"
+        userid:
+          type: string
+          nullable: true
+          example: "johndoe"
+        password:
+          type: string
+          nullable: true
+          example: "SecretPass@123"
+
+    UpdateKohaBorrowerRequest:
+      type: object
+      properties:
+        firstname:
+          type: string
+          example: "John"
+        surname:
+          type: string
+          example: "Doe"
+        cardnumber:
+          type: string
+          example: "LIB-2026-001"
+        category_id:
+          type: string
+          example: "STU"
+        library_id:
+          type: string
+          example: "MAIN"
+        email:
+          type: string
+          format: email
+          example: "john.doe@example.com"
+        phone:
+          type: string
+          example: "9876543210"
+        address:
+          type: string
+          example: "123 North Hall Street"
+        city:
+          type: string
+          example: "Bangalore"
+        date_of_birth:
+          type: string
+          format: date
+          example: "2004-05-15"
+        expiry_date:
+          type: string
+          format: date
+          example: "2027-06-30"
+        userid:
+          type: string
+          example: "johndoe"
+        password:
+          type: string
+          example: "NewSecretPass@123"
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status confirmation of the library service.
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /health:
+    get:
+      tags:
+        - Service
+      summary: Health check
+      description: Returns running environment and port configuration.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/library/students/{student_id}/status:
+    get:
+      tags:
+        - Students & Catalog
+      summary: Get student library clearance status
+      description: Returns student library clearance, overdue book count, and pending fine amount directly from Koha mapping.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: student_id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Student library status fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Student or patron mapping not found
+
+  /api/library/students/{student_id}/loans:
+    get:
+      tags:
+        - Students & Catalog
+      summary: Get student active book loans
+      description: Lists all currently issued books, due dates, and item titles for the student.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: student_id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Student active loans fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/students/{student_id}/fines:
+    get:
+      tags:
+        - Students & Catalog
+      summary: Get student pending library fines
+      description: Returns fine amounts, accountlines, and overdue penalties associated with the student.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: student_id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Student library fines fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/books/search:
+    get:
+      tags:
+        - Students & Catalog
+      summary: Search library catalog books
+      description: Search Koha ILS bibliographic records by title, author, ISBN, or general keyword.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: General search query
+          example: "Data Structures"
+        - in: query
+          name: title
+          schema:
+            type: string
+          example: "Algorithms"
+        - in: query
+          name: author
+          schema:
+            type: string
+          example: "Cormen"
+        - in: query
+          name: isbn
+          schema:
+            type: string
+          example: "9780262033848"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Book search results returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/settings:
+    get:
+      tags:
+        - Koha Settings
+      summary: List Koha settings
+      description: Lists configured Koha integration settings and API configuration (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Settings list fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin role required
+    post:
+      tags:
+        - Koha Settings
+      summary: Create a Koha setting
+      description: Saves a new Koha integration configuration key-value entry (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKohaSettingRequest'
+      responses:
+        '201':
+          description: Setting created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/library/settings/{id}:
+    get:
+      tags:
+        - Koha Settings
+      summary: Get Koha setting by ID
+      description: Returns setting details by ID (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Setting fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Setting not found
+    put:
+      tags:
+        - Koha Settings
+      summary: Update Koha setting by ID
+      description: Updates setting value, description, or active status (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateKohaSettingRequest'
+      responses:
+        '200':
+          description: Setting updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Setting not found
+    delete:
+      tags:
+        - Koha Settings
+      summary: Delete Koha setting by ID
+      description: Deletes a Koha setting record (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Setting deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Setting not found
+
+  /api/library/patrons:
+    get:
+      tags:
+        - Patron Mappings
+      summary: List mapped library patrons
+      description: Returns paginated list of student and staff patron mappings to Koha.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Patrons list fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Patron Mappings
+      summary: Create a patron mapping
+      description: Maps a local student ID to a Koha patron identifier.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePatronRequest'
+      responses:
+        '201':
+          description: Patron mapped successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /api/library/patrons/auto-map:
+    post:
+      tags:
+        - Patron Mappings
+      summary: Trigger automatic patron mapping
+      description: Matches unmapped students to Koha borrowers by cardnumber or email and creates mappings.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Auto-mapping executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/patrons/{id}:
+    get:
+      tags:
+        - Patron Mappings
+      summary: Get patron mapping by ID
+      description: Returns mapped patron details by database ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Patron mapping fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Patron mapping not found
+    put:
+      tags:
+        - Patron Mappings
+      summary: Update patron mapping by ID
+      description: Updates mapped student, Koha ID, or active status.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePatronRequest'
+      responses:
+        '200':
+          description: Patron mapping updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Patron mapping not found
+    delete:
+      tags:
+        - Patron Mappings
+      summary: Delete patron mapping by ID
+      description: Deletes patron mapping record.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Patron mapping deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Patron mapping not found
+
+  /api/library/patrons/student/{student_id}:
+    get:
+      tags:
+        - Patron Mappings
+      summary: Get patron mapping by Student ID
+      description: Returns Koha patron mapping for a specific student ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: student_id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Patron mapping fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Mapping not found for this student
+
+  /api/library/patrons/email/{email}:
+    put:
+      tags:
+        - Patron Mappings
+      summary: Update patron mapping by Student Email
+      description: Updates Koha patron mapping matching the student email.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: email
+          required: true
+          schema:
+            type: string
+          example: "john.doe@example.com"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePatronRequest'
+      responses:
+        '200':
+          description: Patron mapping updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Patron not found for this email
+
+  /api/library/clearance-logs:
+    get:
+      tags:
+        - Clearance Logs
+      summary: List clearance history logs
+      description: Returns paginated clearance verification history across students.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Clearance logs fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Clearance Logs
+      summary: Create a clearance log entry
+      description: Manually records a library dues clearance verification for a student.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClearanceLogRequest'
+      responses:
+        '201':
+          description: Clearance log created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /api/library/clearance-logs/sync:
+    post:
+      tags:
+        - Clearance Logs
+      summary: Synchronize all student clearance logs
+      description: Batch synchronizes student clearance statuses against Koha database for all active students.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Clearance logs synchronized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/clearance-logs/{id}:
+    get:
+      tags:
+        - Clearance Logs
+      summary: Get clearance log by ID
+      description: Returns details of a specific clearance log entry.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Clearance log fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Clearance log not found
+    put:
+      tags:
+        - Clearance Logs
+      summary: Update clearance log by ID
+      description: Updates clearance log status, fine amounts, or remarks.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClearanceLogRequest'
+      responses:
+        '200':
+          description: Clearance log updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Clearance log not found
+    delete:
+      tags:
+        - Clearance Logs
+      summary: Delete clearance log by ID
+      description: Deletes a clearance log record.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Clearance log deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Clearance log not found
+
+  /api/library/checkouts:
+    get:
+      tags:
+        - Circulation
+      summary: List all active checkouts
+      description: Returns active checkouts across all library patrons directly from Koha.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Checkouts list fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Circulation
+      summary: Issue a book to a patron
+      description: Creates a new checkout/loan in Koha ILS for the given patron ID and item barcode.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueBookRequest'
+      responses:
+        '201':
+          description: Book issued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request or book unavailable
+        '401':
+          description: Unauthorized
+
+  /api/library/checkouts/patron/{patron_id}:
+    get:
+      tags:
+        - Circulation
+      summary: Get active checkouts for a specific patron
+      description: Lists active book checkouts for a Koha borrower ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: patron_id
+          required: true
+          schema:
+            type: string
+          example: "101"
+      responses:
+        '200':
+          description: Patron checkouts fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/checkouts/{id}:
+    put:
+      tags:
+        - Circulation
+      summary: Renew a checkout
+      description: Renews the loan period for an existing checkout item in Koha.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Checkout / Issue ID
+          example: "1234"
+      responses:
+        '200':
+          description: Checkout renewed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Renewal limit exceeded or renewal failed
+    delete:
+      tags:
+        - Circulation
+      summary: Return / check-in a book
+      description: Marks a checked-out book item as returned in Koha ILS.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Checkout / Issue ID
+          example: "1234"
+      responses:
+        '200':
+          description: Book returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Return failed
+
+  /api/library/holds:
+    get:
+      tags:
+        - Holds & Reservations
+      summary: List all active holds
+      description: Returns list of pending book reservations in Koha.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Holds list fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Holds & Reservations
+      summary: Place a hold on a book
+      description: Reserves a bibliographic item for a patron in Koha.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceHoldRequest'
+      responses:
+        '201':
+          description: Hold placed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request or item not holdable
+        '401':
+          description: Unauthorized
+
+  /api/library/holds/patron/{patron_id}:
+    get:
+      tags:
+        - Holds & Reservations
+      summary: Get holds for a specific patron
+      description: Lists active book reservations for a given Koha patron ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: patron_id
+          required: true
+          schema:
+            type: string
+          example: "101"
+      responses:
+        '200':
+          description: Patron holds fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/holds/{id}:
+    delete:
+      tags:
+        - Holds & Reservations
+      summary: Cancel a hold
+      description: Cancels an active reservation in Koha by hold ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Hold ID
+          example: "45"
+      responses:
+        '200':
+          description: Hold cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Hold not found
+
+  /api/library/koha/health:
+    get:
+      tags:
+        - Koha Borrowers & ILS
+      summary: Check Koha ILS connection health
+      description: Tests direct connectivity and authentication with the configured Koha ILS REST API and database.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Koha connection is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '500':
+          description: Koha connection failed
+
+  /api/library/koha/patrons/search:
+    get:
+      tags:
+        - Koha Borrowers & ILS
+      summary: Search Koha ILS patrons directory
+      description: Searches patron records in Koha by cardnumber, email, or name.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          example: "John"
+        - in: query
+          name: cardnumber
+          schema:
+            type: string
+          example: "LIB-2026-001"
+        - in: query
+          name: email
+          schema:
+            type: string
+          example: "john.doe@example.com"
+      responses:
+        '200':
+          description: Koha patrons fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/koha/defaulters:
+    get:
+      tags:
+        - Koha Borrowers & ILS
+      summary: List library fee / loan defaulters
+      description: Returns list of patrons with overdue loans or unpaid library fines from Koha.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Defaulters list fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/library/koha/borrowers:
+    get:
+      tags:
+        - Koha Borrowers & ILS
+      summary: List Koha borrowers
+      description: Direct query of borrower records from Koha ILS database.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Borrowers list fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Koha Borrowers & ILS
+      summary: Create Koha borrower
+      description: Directly creates a new patron/borrower account in Koha ILS.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateKohaBorrowerRequest'
+      responses:
+        '201':
+          description: Koha borrower created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /api/library/koha/borrowers/{patron_id}:
+    get:
+      tags:
+        - Koha Borrowers & ILS
+      summary: Get Koha borrower details
+      description: Returns borrower record details from Koha by patron ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: patron_id
+          required: true
+          schema:
+            type: string
+          example: "101"
+      responses:
+        '200':
+          description: Borrower details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Borrower not found
+    put:
+      tags:
+        - Koha Borrowers & ILS
+      summary: Update Koha borrower
+      description: Updates borrower information in Koha ILS.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: patron_id
+          required: true
+          schema:
+            type: string
+          example: "101"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateKohaBorrowerRequest'
+      responses:
+        '200':
+          description: Koha borrower updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Borrower not found
+    delete:
+      tags:
+        - Koha Borrowers & ILS
+      summary: Delete Koha borrower
+      description: Deletes a borrower record from Koha ILS.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: patron_id
+          required: true
+          schema:
+            type: string
+          example: "101"
+      responses:
+        '200':
+          description: Koha borrower deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Borrower not found

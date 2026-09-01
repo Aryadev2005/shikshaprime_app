@@ -7,10 +7,8 @@
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import Constants from 'expo-constants';
 import { Alert } from 'react-native';
-
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://127.0.0.1:4000/api/mobile';
+import { API_URL } from '../config/env';
 
 interface RefreshQueueItem {
   resolve: (token: string) => void;

@@ -200,17 +200,12 @@ export const AssignmentDetailScreen: React.FC<Props> = ({ route, navigation }) =
   const { id } = route.params;
   const { data, isLoading, isError } = useAssignmentDetail(id);
   const { mutate: submit, isPending: isSubmitting } = useSubmitAssignment();
-  const token = useAuthStore((s) => s.token);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
-  const isTeacher = (() => {
-    try {
-      const payload = JSON.parse(atob((token ?? '').split('.')[1]));
-      return (payload as { role?: string }).role === 'teacher';
-    } catch {
-      return false;
-    }
-  })();
+  // Canonical role from the auth store. This previously re-decoded the JWT with
+  // `atob`, which throws on base64url segments ('-'/'_') and fell back to
+  // `false` — silently showing teachers the student submission UI.
+  const isTeacher = useAuthStore((s) => s.role) === 'teacher';
 
   const handlePickAndSubmit = async () => {
     try {

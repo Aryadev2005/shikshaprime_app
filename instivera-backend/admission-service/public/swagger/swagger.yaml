@@ -1,0 +1,1367 @@
+openapi: 3.0.0
+info:
+  title: Admission & Student Onboarding Service API
+  description: Comprehensive Student Admission, Registration Lifecycle, Academic Application Form Submissions, Document Uploads, Re-admission Workflows, Bulk Excel Imports, and Semester Result Publishing API for ShikshaPrime College Management System.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata
+  - name: Registration
+    description: Initial applicant registration and document dispatch
+  - name: Application Form
+    description: Multi-step applicant admission form (Personal, Address, Guardian, 10th & 12th Results, Document Uploads, Subject Choice, Confirmation)
+  - name: Readmission
+    description: Automated eligibility checks, pending readmission generation, student subject confirmations, and admin approvals
+  - name: Student Management
+    description: Registration pipeline status updates, manual student creation, student directory, batch reports, and profile updates
+  - name: Bulk Upload
+    description: Bulk Excel applicant and student database onboarding
+  - name: Student Results
+    description: Uploading and viewing semester examination mark records
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "An error occurred while processing the request"
+      additionalProperties: true
+
+    AddressDetailsRequest:
+      type: object
+      required:
+        - present_address_line1
+        - present_city
+        - present_state
+        - present_pincode
+      properties:
+        present_address_line1:
+          type: string
+          example: "123 Green Park Colony"
+        present_address_line2:
+          type: string
+          nullable: true
+          example: "Near City Center"
+        present_city:
+          type: string
+          example: "Kolkata"
+        present_district:
+          type: string
+          nullable: true
+          example: "North 24 Parganas"
+        present_state:
+          type: string
+          example: "West Bengal"
+        present_pincode:
+          type: string
+          example: "700001"
+        is_permanent_same:
+          type: boolean
+          default: true
+          example: true
+        permanent_address_line1:
+          type: string
+          nullable: true
+          example: "123 Green Park Colony"
+        permanent_city:
+          type: string
+          nullable: true
+          example: "Kolkata"
+        permanent_state:
+          type: string
+          nullable: true
+          example: "West Bengal"
+        permanent_pincode:
+          type: string
+          nullable: true
+          example: "700001"
+
+    GuardianDetailsRequest:
+      type: object
+      required:
+        - father_name
+        - mother_name
+        - primary_contact_number
+      properties:
+        father_name:
+          type: string
+          example: "Ramesh Sharma"
+        father_occupation:
+          type: string
+          nullable: true
+          example: "Business"
+        mother_name:
+          type: string
+          example: "Sunita Sharma"
+        mother_occupation:
+          type: string
+          nullable: true
+          example: "Homemaker"
+        guardian_name:
+          type: string
+          nullable: true
+          example: "Ramesh Sharma"
+        guardian_relation:
+          type: string
+          nullable: true
+          example: "Father"
+        primary_contact_number:
+          type: string
+          example: "9876543210"
+        annual_income:
+          type: number
+          nullable: true
+          example: 600000.00
+
+    SecondaryResultRequest:
+      type: object
+      required:
+        - board_name
+        - passing_year
+        - total_marks
+        - marks_obtained
+        - percentage
+      properties:
+        board_name:
+          type: string
+          example: "WBBSE"
+        school_name:
+          type: string
+          nullable: true
+          example: "City High School"
+        roll_number:
+          type: string
+          nullable: true
+          example: "123456"
+        passing_year:
+          type: integer
+          example: 2024
+        total_marks:
+          type: number
+          example: 700.0
+        marks_obtained:
+          type: number
+          example: 595.0
+        percentage:
+          type: number
+          example: 85.0
+
+    HigherSecondaryResultRequest:
+      type: object
+      required:
+        - board_name
+        - stream
+        - passing_year
+        - total_marks
+        - marks_obtained
+        - percentage
+      properties:
+        board_name:
+          type: string
+          example: "WBCHSE"
+        school_name:
+          type: string
+          nullable: true
+          example: "City Higher Secondary School"
+        stream:
+          type: string
+          enum: [SCIENCE, COMMERCE, ARTS, VOCATIONAL]
+          example: "SCIENCE"
+        roll_number:
+          type: string
+          nullable: true
+          example: "654321"
+        passing_year:
+          type: integer
+          example: 2026
+        total_marks:
+          type: number
+          example: 500.0
+        marks_obtained:
+          type: number
+          example: 440.0
+        percentage:
+          type: number
+          example: 88.0
+        subjects:
+          type: array
+          nullable: true
+          items:
+            type: object
+            properties:
+              subject_name:
+                type: string
+                example: "Physics"
+              theory_marks:
+                type: number
+                example: 62.0
+              practical_marks:
+                type: number
+                example: 28.0
+              total:
+                type: number
+                example: 90.0
+
+    BulkStatusUpdateRequest:
+      type: object
+      required:
+        - registrationIds
+        - status
+      properties:
+        registrationIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 3]
+        status:
+          type: string
+          enum: [APPLIED, VERIFIED, SELECTED, REJECTED, ADMITTED]
+          example: "SELECTED"
+        remarks:
+          type: string
+          nullable: true
+          example: "Document verification cleared"
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Admission management service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/registerApplicant:
+    post:
+      tags:
+        - Registration
+      summary: Register new applicant
+      description: Submits initial registration with Higher Secondary registration certificate and category proof documents.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - first_name
+                - email
+                - mobile
+                - program_id
+                - hs_registration_certificate
+              properties:
+                first_name:
+                  type: string
+                  example: "Rahul"
+                middle_name:
+                  type: string
+                  nullable: true
+                  example: "Kumar"
+                last_name:
+                  type: string
+                  example: "Sharma"
+                email:
+                  type: string
+                  format: email
+                  example: "rahul.sharma@example.com"
+                mobile:
+                  type: string
+                  example: "9876543210"
+                program_id:
+                  type: integer
+                  example: 3
+                academic_year_id:
+                  type: integer
+                  example: 2
+                hs_registration_number:
+                  type: string
+                  example: "HS-2026-998811"
+                category:
+                  type: string
+                  enum: [GENERAL, SC, ST, OBC_A, OBC_B, EWS]
+                  default: GENERAL
+                  example: "GENERAL"
+                hs_registration_certificate:
+                  type: string
+                  format: binary
+                  description: Higher secondary certificate (PDF / Image)
+                catagory_certificate_path:
+                  type: string
+                  format: binary
+                  description: Caste/category certificate if applicable
+      responses:
+        '201':
+          description: Applicant registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing required fields or certificate
+
+  /api/admission/application/program-selection:
+    get:
+      tags:
+        - Application Form
+      summary: Get program selection options
+      description: Returns available programs, departments, and course structures for applicant choice.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Program selection data fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/program:
+    get:
+      tags:
+        - Application Form
+      summary: Get user applied program details
+      description: Returns program details applied by the logged-in applicant.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Program details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/department/{departmentId}:
+    get:
+      tags:
+        - Application Form
+      summary: Get department details by ID
+      description: Returns department and subject combination information.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: departmentId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Department details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/subject:
+    get:
+      tags:
+        - Application Form
+      summary: Get applicant chosen subject combination
+      description: Returns subjects selected in the application form.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Subject details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Application Form
+      summary: Save applicant subject selection
+      description: Saves Major, Minor, and Skill Enhancement subject combinations.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                major_subject_id:
+                  type: integer
+                  example: 10
+                minor_subject_id:
+                  type: integer
+                  example: 12
+                sec_subject_id:
+                  type: integer
+                  example: 15
+      responses:
+        '200':
+          description: Subject details saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/personal-details:
+    get:
+      tags:
+        - Application Form
+      summary: Get personal details
+      description: Returns applicant profile information.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Personal details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Application Form
+      summary: Save personal details with profile uploads
+      description: Saves demographic details along with passport photograph, signature, and bank passbook proof.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                dob:
+                  type: string
+                  format: date
+                  example: "2006-05-15"
+                gender:
+                  type: string
+                  enum: [MALE, FEMALE, OTHER]
+                  example: "MALE"
+                blood_group:
+                  type: string
+                  example: "O+"
+                nationality:
+                  type: string
+                  default: Indian
+                  example: "Indian"
+                religion:
+                  type: string
+                  example: "Hindu"
+                aadhar_number:
+                  type: string
+                  example: "123456789012"
+                bank_account_number:
+                  type: string
+                  example: "30012345678"
+                bank_ifsc:
+                  type: string
+                  example: "SBIN0000123"
+                profile_photo:
+                  type: string
+                  format: binary
+                signature:
+                  type: string
+                  format: binary
+                bank_proof_document:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Personal details saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/address-details:
+    get:
+      tags:
+        - Application Form
+      summary: Get address details
+      description: Returns residential and permanent address of applicant.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Address details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Application Form
+      summary: Save address details
+      description: Saves present and permanent residential addresses.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressDetailsRequest'
+      responses:
+        '200':
+          description: Address details saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/guardian-details:
+    get:
+      tags:
+        - Application Form
+      summary: Get guardian details
+      description: Returns parent/guardian profile and income details.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Guardian details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Application Form
+      summary: Save guardian details
+      description: Saves parent and emergency guardian contacts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuardianDetailsRequest'
+      responses:
+        '200':
+          description: Guardian details saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/secondary-result:
+    get:
+      tags:
+        - Application Form
+      summary: Get 10th / Secondary result
+      description: Returns matriculation exam scores.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tenth result fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Application Form
+      summary: Save 10th / Secondary result
+      description: Saves 10th standard board results and percentages.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecondaryResultRequest'
+      responses:
+        '200':
+          description: 10th standard result saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/higher-seconday-result:
+    get:
+      tags:
+        - Application Form
+      summary: Get 12th / Higher Secondary result
+      description: Returns 12th standard exam scores and marks breakdown.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Twelfth result fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Application Form
+      summary: Save 12th / Higher Secondary result
+      description: Saves 12th standard subject marks and board details.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HigherSecondaryResultRequest'
+      responses:
+        '200':
+          description: 12th standard result saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/upload-documents:
+    post:
+      tags:
+        - Application Form
+      summary: Upload admission supporting documents
+      description: Uploads identity proof, 10th marksheet, 12th marksheet, and age proof certificates.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                identity_proof:
+                  type: string
+                  format: binary
+                tenth_marksheet:
+                  type: string
+                  format: binary
+                twelfth_marksheet:
+                  type: string
+                  format: binary
+                age_proof:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Documents uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/documents:
+    get:
+      tags:
+        - Application Form
+      summary: Get uploaded document list
+      description: Returns URLs and verification status of uploaded applicant documents.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Documents fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/preview:
+    get:
+      tags:
+        - Application Form
+      summary: Get complete application preview
+      description: Aggregates personal, address, guardian, academic marks, and documents for pre-submission confirmation.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preview data fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/preview-confirm:
+    post:
+      tags:
+        - Application Form
+      summary: Finalize and submit application form
+      description: Locks the application form and advances status to APPLIED.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Preview confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/readmission/eligibility/{studentId}:
+    get:
+      tags:
+        - Readmission
+      summary: Check student readmission eligibility
+      description: Validates whether a student meets institutional criteria for term readmission or semester promotion.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Eligibility checked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/readmission/autocreate-requests:
+    get:
+      tags:
+        - Readmission
+      summary: List readmission requests (Admin)
+      description: Returns paginated list of student readmission requests for admin review.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Readmission requests fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Readmission
+      summary: Auto-create pending readmission requests (Admin)
+      description: Generates pending readmission applications for eligible students based on semester exam results.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                class_id:
+                  type: integer
+                  example: 10
+                academic_year_id:
+                  type: integer
+                  example: 2
+      responses:
+        '200':
+          description: Pending readmission requests created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/readmission/details/{studentId}:
+    get:
+      tags:
+        - Readmission
+      summary: Get student readmission details
+      description: Returns readmission fee, target semester, and pending requirements for a student.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Readmission details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/readmission/approve-requests:
+    post:
+      tags:
+        - Readmission
+      summary: Approve student readmission (Admin)
+      description: Approves readmission request and updates student enrollment to the promoted semester.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                readmissionRequestId:
+                  type: integer
+                  example: 15
+      responses:
+        '200':
+          description: Readmission request approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/confirm-readmission/{studentId}:
+    post:
+      tags:
+        - Readmission
+      summary: Student confirm readmission & subject choices
+      description: Submits student confirmation for readmission with chosen elective subjects.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: integer
+          example: 101
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subjects:
+                  type: array
+                  items:
+                    type: integer
+                  example: [12, 14, 18]
+      responses:
+        '200':
+          description: Readmission confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/readmission/rules:
+    get:
+      tags:
+        - Readmission
+      summary: Get readmission qualification rules
+      description: Returns institutional promotion and credit threshold policies.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Readmission rules fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/registrations:
+    get:
+      tags:
+        - Student Management
+      summary: List admission applicants (Admin pipeline)
+      description: Returns paginated applicant applications with filters for class, academic year, status, and search text.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: classId
+          schema:
+            type: integer
+          example: 10
+        - in: query
+          name: academicYearId
+          schema:
+            type: integer
+          example: 2
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [APPLIED, VERIFIED, SELECTED, REJECTED, ADMITTED]
+          example: "APPLIED"
+        - in: query
+          name: searchText
+          schema:
+            type: string
+          example: "Rahul"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Registration details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/student/{studentId}:
+    get:
+      tags:
+        - Student Management
+      summary: Get student registration details by ID
+      description: Returns full profile of student applicant.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Student details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/registrations/bulk-status:
+    post:
+      tags:
+        - Student Management
+      summary: Bulk update applicant admission status (Admin)
+      description: Updates admission pipeline status for multiple candidates (e.g. mark as SELECTED or send payment links).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkStatusUpdateRequest'
+      responses:
+        '200':
+          description: Registrations updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/semesters/{classId}/{programId}:
+    get:
+      tags:
+        - Student Management
+      summary: Get class semesters
+      description: Returns semester terms mapped to a class and program.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: classId
+          required: true
+          schema:
+            type: integer
+          example: 10
+        - in: path
+          name: programId
+          required: true
+          schema:
+            type: integer
+          example: 3
+      responses:
+        '200':
+          description: Semester details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/student/create:
+    post:
+      tags:
+        - Student Management
+      summary: Create student directly (Admin)
+      description: Directly onboard a student into the system with assigned roll number and credentials.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - email
+                - mobile
+                - program_id
+                - class_id
+                - academic_year_id
+              properties:
+                first_name:
+                  type: string
+                  example: "Amit"
+                last_name:
+                  type: string
+                  example: "Roy"
+                email:
+                  type: string
+                  format: email
+                  example: "amit.roy@example.com"
+                mobile:
+                  type: string
+                  example: "9876543211"
+                roll_number:
+                  type: string
+                  example: "CS-2026-045"
+                program_id:
+                  type: integer
+                  example: 3
+                class_id:
+                  type: integer
+                  example: 10
+                academic_year_id:
+                  type: integer
+                  example: 2
+      responses:
+        '200':
+          description: Student created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/student-all:
+    get:
+      tags:
+        - Student Management
+      summary: List all active students
+      description: Returns all enrolled students with search filters and pagination.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: roll_number
+          schema:
+            type: string
+          example: "CS-2026-045"
+        - in: query
+          name: student_name
+          schema:
+            type: string
+          example: "Amit"
+        - in: query
+          name: email
+          schema:
+            type: string
+          example: "amit.roy@example.com"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          example: 50
+      responses:
+        '200':
+          description: Students fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/student-reports:
+    get:
+      tags:
+        - Student Management
+      summary: Get student admission reports
+      description: Returns comprehensive admission batch reports and demographics.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: roll_number
+          schema:
+            type: string
+        - in: query
+          name: student_name
+          schema:
+            type: string
+        - in: query
+          name: email
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Reports fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/student/{userId}:
+    patch:
+      tags:
+        - Student Management
+      summary: Update student profile
+      description: Modifies student contact, address, or demographic information.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+          example: 101
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mobile:
+                  type: string
+                  example: "9876543299"
+                emergency_contact:
+                  type: string
+                  example: "9876543200"
+      responses:
+        '200':
+          description: Student updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/application/bulk-student-upload:
+    post:
+      tags:
+        - Bulk Upload
+      summary: Bulk upload student records
+      description: Ingests array of student record objects parsed from Excel sheet.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  student_name:
+                    type: string
+                    example: "Kiran Sen"
+                  email:
+                    type: string
+                    example: "kiran.sen@example.com"
+                  mobile:
+                    type: string
+                    example: "9988776655"
+                  roll_number:
+                    type: string
+                    example: "CS-2026-050"
+                  program_id:
+                    type: integer
+                    example: 3
+                  class_id:
+                    type: integer
+                    example: 10
+      responses:
+        '200':
+          description: Bulk student records processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/result/upload:
+    post:
+      tags:
+        - Student Results
+      summary: Upload student examination result
+      description: Uploads student semester result marks.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - student_id
+                - semester_id
+                - results
+              properties:
+                student_id:
+                  type: integer
+                  example: 101
+                semester_id:
+                  type: integer
+                  example: 1
+                results:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      subject_id:
+                        type: integer
+                        example: 12
+                      grade:
+                        type: string
+                        example: "A+"
+                      total_marks:
+                        type: number
+                        example: 92.0
+      responses:
+        '200':
+          description: Student result uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/admission/student/result/{id}:
+    get:
+      tags:
+        - Student Results
+      summary: Get student result by ID
+      description: Returns published academic result report card.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Student result fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

@@ -1,0 +1,1290 @@
+openapi: 3.0.0
+info:
+  title: Examination Service API
+  description: Comprehensive Examination & Academic Assessment API for ShikshaPrime College Management System, supporting examination cycles, component templates (Theory, Practical, Viva, Internal, Assignment), grade/mark mappings, schedule creation and room conflict management, examiner allocations, faculty mark entry & submission workflows, administrative score calculations, and student result publishing.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata
+  - name: Exams
+    description: Examination creation, lifecycle management, and administrative summaries
+  - name: Templates
+    description: Component evaluation templates (Theory, Practical, Viva, Internal, Project)
+  - name: Components
+    description: Exam-to-component mapping, weightage configuration, and reordering
+  - name: Schedules
+    description: Timetable scheduling, room allocations, and slot collision detection
+  - name: Examiners
+    description: Faculty examiner eligibility, assignment, and invigilation tracking
+  - name: Teacher Exams
+    description: Faculty assessment portals, student mark evaluations, and draft/final submissions
+  - name: Admin Results
+    description: Score computation engine, moderation, finalisation, and public score release
+  - name: Student Results
+    description: Student report cards, transcript breakdowns, and published assessment grades
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "An error occurred while processing the request"
+      additionalProperties: true
+
+    CreateExamRequest:
+      type: object
+      required:
+        - exam_name
+        - exam_type
+        - academic_year_id
+        - program_id
+        - semester_id
+        - start_date
+        - end_date
+      properties:
+        exam_name:
+          type: string
+          example: "Mid Semester Examination - Autumn 2026"
+        exam_type:
+          type: string
+          enum: [MID_TERM, END_TERM, INTERNAL, PRACTICAL, SUPPLEMENTARY]
+          example: "MID_TERM"
+        academic_year_id:
+          type: integer
+          example: 2
+        program_id:
+          type: integer
+          example: 3
+        semester_id:
+          type: integer
+          example: 1
+        start_date:
+          type: string
+          format: date
+          example: "2026-10-15"
+        end_date:
+          type: string
+          format: date
+          example: "2026-10-25"
+        is_published:
+          type: integer
+          enum: [0, 1]
+          default: 0
+          example: 0
+
+    CreateTemplateRequest:
+      type: object
+      required:
+        - component_name
+        - component_code
+        - default_max_marks
+      properties:
+        component_name:
+          type: string
+          example: "End Semester Theory"
+        component_code:
+          type: string
+          example: "THEORY"
+        default_max_marks:
+          type: number
+          example: 70.0
+        default_pass_marks:
+          type: number
+          example: 28.0
+        description:
+          type: string
+          nullable: true
+          example: "Written university theory evaluation"
+
+    AddComponentRequest:
+      type: object
+      required:
+        - template_id
+        - max_marks
+      properties:
+        template_id:
+          type: integer
+          example: 1
+        max_marks:
+          type: number
+          example: 70.0
+        pass_marks:
+          type: number
+          example: 28.0
+        weightage:
+          type: number
+          example: 70.0
+        order_index:
+          type: integer
+          example: 1
+
+    ReorderComponentsRequest:
+      type: object
+      required:
+        - component_orders
+      properties:
+        component_orders:
+          type: array
+          items:
+            type: object
+            required:
+              - mapping_id
+              - order_index
+            properties:
+              mapping_id:
+                type: integer
+                example: 5
+              order_index:
+                type: integer
+                example: 1
+
+    CreateScheduleRequest:
+      type: object
+      required:
+        - exam_id
+        - subject_id
+        - exam_date
+        - start_time
+        - end_time
+      properties:
+        exam_id:
+          type: integer
+          example: 1
+        subject_id:
+          type: integer
+          example: 12
+        exam_date:
+          type: string
+          format: date
+          example: "2026-10-16"
+        start_time:
+          type: string
+          example: "10:00:00"
+        end_time:
+          type: string
+          example: "13:00:00"
+        room_id:
+          type: integer
+          nullable: true
+          example: 204
+        max_capacity:
+          type: integer
+          nullable: true
+          example: 60
+
+    CheckRoomRequest:
+      type: object
+      required:
+        - room_id
+        - exam_date
+        - start_time
+        - end_time
+      properties:
+        room_id:
+          type: integer
+          example: 204
+        exam_date:
+          type: string
+          format: date
+          example: "2026-10-16"
+        start_time:
+          type: string
+          example: "10:00:00"
+        end_time:
+          type: string
+          example: "13:00:00"
+
+    AssignExaminerRequest:
+      type: object
+      required:
+        - faculty_id
+        - subject_id
+        - role
+      properties:
+        faculty_id:
+          type: integer
+          example: 10
+        subject_id:
+          type: integer
+          example: 12
+        role:
+          type: string
+          enum: [INVIGILATOR, CHIEF_INVIGILATOR, EVALUATOR, HEAD_EVALUATOR]
+          example: "EVALUATOR"
+
+    SaveMarksRequest:
+      type: object
+      required:
+        - exam_id
+        - subject_id
+        - component_id
+        - marks
+      properties:
+        exam_id:
+          type: integer
+          example: 1
+        subject_id:
+          type: integer
+          example: 12
+        component_id:
+          type: integer
+          example: 1
+        marks:
+          type: array
+          items:
+            type: object
+            required:
+              - student_id
+              - marks_obtained
+            properties:
+              student_id:
+                type: integer
+                example: 101
+              marks_obtained:
+                type: number
+                example: 65.5
+              is_absent:
+                type: integer
+                enum: [0, 1]
+                default: 0
+                example: 0
+              remarks:
+                type: string
+                nullable: true
+                example: "Good performance"
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/all:
+    get:
+      tags:
+        - Exams
+      summary: List all exams
+      description: Returns list of exams filtered by academic year, program, or semester.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: academic_year_id
+          schema:
+            type: integer
+          example: 2
+        - in: query
+          name: program_id
+          schema:
+            type: integer
+          example: 3
+        - in: query
+          name: semester_id
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Exams fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/create:
+    post:
+      tags:
+        - Exams
+      summary: Create an exam (Admin)
+      description: Registers a new examination term.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExamRequest'
+      responses:
+        '201':
+          description: Exam created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/{id}:
+    get:
+      tags:
+        - Exams
+      summary: Get exam details by ID
+      description: Returns exam metadata along with configured components and schedules.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Exam fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Exam not found
+    put:
+      tags:
+        - Exams
+      summary: Update exam (Admin)
+      description: Updates exam dates, type, or title.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExamRequest'
+      responses:
+        '200':
+          description: Exam updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    delete:
+      tags:
+        - Exams
+      summary: Delete exam (Admin)
+      description: Deletes an examination and all associated schedules and marks.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Exam deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/templates/all:
+    get:
+      tags:
+        - Templates
+      summary: List all component templates
+      description: Returns master templates for evaluation components (Theory, Practical, Viva, Internal, Assignment).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Templates fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/template:
+    post:
+      tags:
+        - Templates
+      summary: Create a component template (Admin)
+      description: Adds a reusable component template to the system.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+      responses:
+        '201':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/{examId}/components:
+    get:
+      tags:
+        - Components
+      summary: List components mapped to an exam
+      description: Returns configured evaluation components for a given exam.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Components fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/components/{templateId}:
+    get:
+      tags:
+        - Components
+      summary: Get component template by ID
+      description: Returns template specification details.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: templateId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Template fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Components
+      summary: Update component template (Admin)
+      description: Updates template defaults.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: templateId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTemplateRequest'
+      responses:
+        '200':
+          description: Template updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    delete:
+      tags:
+        - Components
+      summary: Delete component template (Admin)
+      description: Deletes a component template.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: templateId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Template deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/{examId}/components/reorder:
+    post:
+      tags:
+        - Components
+      summary: Reorder exam components (Admin)
+      description: Updates the display and evaluation order index of components in an exam.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderComponentsRequest'
+      responses:
+        '200':
+          description: Components reordered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/{examId}/components/add:
+    post:
+      tags:
+        - Components
+      summary: Add component to exam (Admin)
+      description: Maps a component template to an exam with specific max marks and weightage.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddComponentRequest'
+      responses:
+        '201':
+          description: Component mapped successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/mappings/{mappingId}:
+    post:
+      tags:
+        - Components
+      summary: Update component mapping (Admin)
+      description: Updates max marks, pass marks, or weightage on an existing exam component mapping.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: mappingId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddComponentRequest'
+      responses:
+        '200':
+          description: Component mapping updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/{examId}/components/{templateId}:
+    delete:
+      tags:
+        - Components
+      summary: Delete component mapping from exam (Admin)
+      description: Removes component mapping from an exam.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+        - in: path
+          name: templateId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Component mapping deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/schedules/details/{examId}:
+    get:
+      tags:
+        - Schedules
+      summary: Get exam schedules with details
+      description: Returns timetable schedule with enriched subject, hall, and examiner information.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Schedule details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/schedule:
+    post:
+      tags:
+        - Schedules
+      summary: Create exam schedule slot
+      description: Adds a subject examination slot with date, time, and room allocation.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateScheduleRequest'
+      responses:
+        '201':
+          description: Schedule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/schedules/all:
+    get:
+      tags:
+        - Schedules
+      summary: List all exam schedules
+      description: Returns all scheduled exam slots across terms.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Schedules fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/schedules/upcoming:
+    get:
+      tags:
+        - Schedules
+      summary: List upcoming exam schedules
+      description: Returns next upcoming examination slots.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Upcoming schedules fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/schedules/{examId}:
+    get:
+      tags:
+        - Schedules
+      summary: Get schedules for an exam
+      description: Returns all subject date slots for a specified exam ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Exam schedules fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/schedule/update:
+    put:
+      tags:
+        - Schedules
+      summary: Update exam schedule slot
+      description: Updates date, time, or room for a scheduled slot.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateScheduleRequest'
+      responses:
+        '200':
+          description: Schedule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/schedule/{id}:
+    delete:
+      tags:
+        - Schedules
+      summary: Delete exam schedule slot
+      description: Deletes a timetable slot.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Schedule deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/schedule/check-room:
+    post:
+      tags:
+        - Schedules
+      summary: Check examination room availability
+      description: Validates whether an examination hall has booking collisions for the given date and time window.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckRoomRequest'
+      responses:
+        '200':
+          description: Room availability check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/exams/{examId}/eligible-examiners:
+    get:
+      tags:
+        - Examiners
+      summary: List eligible faculty examiners
+      description: Returns faculty members eligible to invigilate or evaluate an exam.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Eligible examiners fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/exams/{examId}/assign-examiner:
+    post:
+      tags:
+        - Examiners
+      summary: Assign examiner to exam
+      description: Assigns a faculty member to invigilate or evaluate a subject in an exam.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignExaminerRequest'
+      responses:
+        '200':
+          description: Examiner assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/exams/{examId}/examiners:
+    get:
+      tags:
+        - Examiners
+      summary: List assigned examiners for an exam
+      description: Returns faculty assigned to an exam.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Assigned examiners fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/teacher/exams/list:
+    get:
+      tags:
+        - Teacher Exams
+      summary: Get faculty assigned exams
+      description: Returns all exams and subjects allocated to the logged-in teacher for evaluation.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Faculty exams fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/teacher/exams/{examId}/students:
+    get:
+      tags:
+        - Teacher Exams
+      summary: Get student list for mark entry
+      description: Returns students enrolled in the subject for marks evaluation.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: subject_id
+          schema:
+            type: integer
+          example: 12
+      responses:
+        '200':
+          description: Students fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/teacher/exams/{examId}/components:
+    get:
+      tags:
+        - Teacher Exams
+      summary: Get exam components for teacher evaluation
+      description: Returns evaluation components and max marks for faculty grading.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Components fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/teacher/exams/{examId}/marks:
+    get:
+      tags:
+        - Teacher Exams
+      summary: Get teacher entered marks
+      description: Returns marks already saved in draft or submitted by the faculty.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: subject_id
+          schema:
+            type: integer
+          example: 12
+        - in: query
+          name: component_id
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Marks fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/teacher/marks/save:
+    post:
+      tags:
+        - Teacher Exams
+      summary: Save teacher marks draft
+      description: Saves student marks in draft state without finalizing submission.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveMarksRequest'
+      responses:
+        '200':
+          description: Marks draft saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/teacher/{examId}/marks/submit:
+    post:
+      tags:
+        - Teacher Exams
+      summary: Finalize and submit teacher marks
+      description: Locks marks entered by faculty and submits them for administrative result computation.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject_id:
+                  type: integer
+                  example: 12
+      responses:
+        '200':
+          description: Marks submitted and locked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/teacher/exams/{examId}/summary:
+    get:
+      tags:
+        - Teacher Exams
+      summary: Get teacher evaluation progress summary
+      description: Returns stats on completed, pending, and submitted evaluations.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Summary fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/admin/exams/{examId}/calculate:
+    post:
+      tags:
+        - Admin Results
+      summary: Compute aggregate exam results (Admin)
+      description: Aggregates all component scores, computes GPAs, percentages, and letter grades.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Results computed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/admin/exams/{examId}/finalise-results:
+    post:
+      tags:
+        - Admin Results
+      summary: Finalise exam results (Admin)
+      description: Locks computed results against further edits.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Results finalised successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/admin/exams/{examId}/publish:
+    post:
+      tags:
+        - Admin Results
+      summary: Publish results to students (Admin)
+      description: Releases finalized examination results to the student portal.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Results published successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/admin/exams/{examId}/summary:
+    get:
+      tags:
+        - Admin Results
+      summary: Get admin result statistics summary
+      description: Returns pass percentage, grade distribution, toppers, and overall performance metrics.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Admin summary fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/admin/exams/{examId}/result:
+    get:
+      tags:
+        - Admin Results
+      summary: Get administrative exam result sheet
+      description: Returns full tabulation ledger sheet of all student scores.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Result sheet fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/student/results:
+    get:
+      tags:
+        - Student Results
+      summary: Get student published exam results
+      description: Returns list of published semester results for the logged-in student.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Student results fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/examination/student/results/{examId}:
+    get:
+      tags:
+        - Student Results
+      summary: Get student detailed mark sheet for an exam
+      description: Returns subject-wise component breakdown, total marks, letter grades, and GPA.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: examId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Student result details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

@@ -1,0 +1,694 @@
+openapi: 3.0.0
+info:
+  title: Fees Management Service API
+  description: Comprehensive Tuition & Fee Management API for ShikshaPrime College Management System, supporting fee head and structure configuration, fee assignment to students, offline & online fee collection, receipt generation, finance service voucher integration, and collection/dues financial reports.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata
+  - name: Fee Structure
+    description: Fee heads, program-wise fee particulars, and academic semester structures
+  - name: Fee Assignment & Dues
+    description: Assigning fees to students, querying student dues, and updating due status
+  - name: Fee Collection & Receipts
+    description: Collecting fee payments (Cash, Bank, Cheque, Online), generating receipts, and querying receipt history
+  - name: Online Payments
+    description: Processing order settlements and registration fees from payment gateways
+  - name: Reports
+    description: Daily collection, student ledger, head-wise collection, and outstanding dues reports
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "An error occurred while processing the request"
+      additionalProperties: true
+
+    CreateFeeHeadRequest:
+      type: object
+      required:
+        - name
+        - ledger_id
+      properties:
+        name:
+          type: string
+          example: "Tuition Fee"
+        description:
+          type: string
+          nullable: true
+          example: "Core academic semester tuition fee"
+        ledger_id:
+          type: integer
+          description: Associated Finance Ledger ID
+          example: 15
+        is_active:
+          type: integer
+          enum: [0, 1]
+          default: 1
+          example: 1
+
+    CreateFeeParticularRequest:
+      type: object
+      required:
+        - fee_head_id
+        - academic_year_id
+        - program_id
+        - amount
+      properties:
+        fee_head_id:
+          type: integer
+          example: 1
+        academic_year_id:
+          type: integer
+          example: 2
+        program_id:
+          type: integer
+          example: 3
+        semester_id:
+          type: integer
+          nullable: true
+          example: 1
+        amount:
+          type: number
+          example: 45000.00
+        is_optional:
+          type: integer
+          enum: [0, 1]
+          default: 0
+          example: 0
+
+    AssignFeeRequest:
+      type: object
+      required:
+        - academic_year_id
+      properties:
+        student_id:
+          type: integer
+          nullable: true
+          description: Single student ID (or use student_ids array)
+          example: 101
+        student_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+          example: [101, 102, 103]
+        program_id:
+          type: integer
+          example: 3
+        academic_year_id:
+          type: integer
+          example: 2
+        semester_id:
+          type: integer
+          nullable: true
+          example: 1
+        fee_head_ids:
+          type: array
+          nullable: true
+          items:
+            type: integer
+          example: [1, 2, 4]
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-09-30"
+
+    UpdateDueStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [PENDING, PARTIAL, PAID, WAIVED]
+          example: "PAID"
+
+    FeeCollectionItemRequest:
+      type: object
+      required:
+        - fee_head_id
+        - amount
+      properties:
+        fee_head_id:
+          type: integer
+          example: 1
+        amount:
+          type: number
+          example: 25000.00
+        discount:
+          type: number
+          default: 0
+          example: 0.00
+        fine:
+          type: number
+          default: 0
+          example: 0.00
+
+    CollectFeeRequest:
+      type: object
+      required:
+        - student_id
+        - payment_mode
+        - fee_heads
+      properties:
+        student_id:
+          type: integer
+          example: 101
+        payment_mode:
+          type: string
+          enum: [CASH, BANK, CHEQUE, ONLINE]
+          example: "BANK"
+        bank_account_id:
+          type: integer
+          nullable: true
+          description: Required when payment_mode is BANK or CHEQUE
+          example: 1
+        reference_no:
+          type: string
+          nullable: true
+          example: "CHQ-987654"
+        narration:
+          type: string
+          nullable: true
+          example: "Semester 1 installment payment"
+        fee_heads:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeeCollectionItemRequest'
+
+    ProcessOnlinePaymentRequest:
+      type: object
+      required:
+        - orderId
+      properties:
+        orderId:
+          type: string
+          example: "ORD_20260822_001"
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/fee-heads:
+    get:
+      tags:
+        - Fee Structure
+      summary: List all fee heads
+      description: Returns master directory of all fee heads (Tuition, Library, Hostel, Transport, etc.).
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Fee heads fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Fee Structure
+      summary: Create fee head
+      description: Creates a new fee head and links it to a general ledger in Finance Service.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeeHeadRequest'
+      responses:
+        '201':
+          description: Fee head created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Fee head name and ledger_id are required or fee head already exists
+
+  /api/fees-management/fee-particulars:
+    post:
+      tags:
+        - Fee Structure
+      summary: Create fee particular structure
+      description: Sets fee amount for a specific fee head, academic year, program, and semester.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFeeParticularRequest'
+      responses:
+        '201':
+          description: Fee particular created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing required fields
+
+  /api/fees-management/fee-particulars/{program_id}/{academic_year_id}/{semester_id}:
+    get:
+      tags:
+        - Fee Structure
+      summary: Get fee particulars by program, year, and semester
+      description: Returns configured fee items and amounts for a degree program term.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: program_id
+          required: true
+          schema:
+            type: integer
+          example: 3
+        - in: path
+          name: academic_year_id
+          required: true
+          schema:
+            type: integer
+          example: 2
+        - in: path
+          name: semester_id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Fee particulars fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/fee-assignment/assign:
+    post:
+      tags:
+        - Fee Assignment & Dues
+      summary: Assign fees to students
+      description: Assigns fee structure dues to a single student or batch of students.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignFeeRequest'
+      responses:
+        '201':
+          description: Fees assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing required fields
+
+  /api/fees-management/dues/{student_id}:
+    get:
+      tags:
+        - Fee Assignment & Dues
+      summary: Get student fee dues
+      description: Returns list of pending and partial fee dues for a student.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: student_id
+          required: true
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Student dues fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/dues/{id}/status:
+    patch:
+      tags:
+        - Fee Assignment & Dues
+      summary: Update due status
+      description: Updates status of a student fee assignment record (PENDING, PARTIAL, PAID, WAIVED).
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDueStatusRequest'
+      responses:
+        '200':
+          description: Due status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Due assignment not found
+
+  /api/fees-management/search:
+    get:
+      tags:
+        - Fee Assignment & Dues
+      summary: Search student
+      description: Searches student directory by name, mobile, email, or student registration ID.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: query
+          required: true
+          schema:
+            type: string
+          example: "Rahul"
+      responses:
+        '200':
+          description: Student search results returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/search-with-dues:
+    get:
+      tags:
+        - Fee Assignment & Dues
+      summary: Search student with dues breakdown
+      description: Searches student profile and computes paid vs pending balance per fee head.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+          example: "Rahul"
+      responses:
+        '200':
+          description: Student with dues fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Student not found
+
+  /api/fees-management/collect:
+    post:
+      tags:
+        - Fee Collection & Receipts
+      summary: Collect fee payment
+      description: Collects student fee payment, creates official receipt record, and synchronizes receipt voucher with Finance Service.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectFeeRequest'
+      responses:
+        '201':
+          description: Fee collected successfully and receipt generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing required collection parameters
+
+  /api/fees-management/receipts/{receipt_id}:
+    get:
+      tags:
+        - Fee Collection & Receipts
+      summary: Get receipt by ID
+      description: Returns full fee receipt breakdown including fee heads, amounts, discounts, and payment mode.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: receipt_id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Receipt fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Receipt not found
+
+  /api/fees-management/receipts/student/{student_id}:
+    get:
+      tags:
+        - Fee Collection & Receipts
+      summary: Get receipts for a student
+      description: Returns historical fee payment receipts for a specific student.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: student_id
+          required: true
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Student receipts fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/online/process:
+    post:
+      tags:
+        - Online Payments
+      summary: Process online fee settlement
+      description: Finalizes and settles online gateway fee payments by order ID.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessOnlinePaymentRequest'
+      responses:
+        '200':
+          description: Online payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/online/process-registration:
+    post:
+      tags:
+        - Online Payments
+      summary: Process online registration fee
+      description: Settles prospective applicant admission registration fee transaction.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessOnlinePaymentRequest'
+      responses:
+        '200':
+          description: Registration payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/reports/daily-collection:
+    get:
+      tags:
+        - Reports
+      summary: Get daily collection report
+      description: Returns daily fee collection metrics filtered by date and payment mode.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-22"
+        - in: query
+          name: payment_mode
+          schema:
+            type: string
+            enum: [CASH, BANK, CHEQUE, ONLINE]
+          example: "CASH"
+      responses:
+        '200':
+          description: Daily collection report fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/reports/student-ledger:
+    get:
+      tags:
+        - Reports
+      summary: Get student fee ledger report
+      description: Returns student chronological fee statement with opening dues, receipts, waivers, and closing balance.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: student_id
+          schema:
+            type: integer
+          example: 101
+        - in: query
+          name: academic_year_id
+          schema:
+            type: integer
+          example: 2
+      responses:
+        '200':
+          description: Student ledger fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/reports/headwise-collection:
+    get:
+      tags:
+        - Reports
+      summary: Get head-wise collection report
+      description: Aggregates total collections grouped by fee head categories.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: from_date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-01"
+        - in: query
+          name: to_date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-31"
+      responses:
+        '200':
+          description: Head-wise collection report fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/fees-management/reports/outstanding-dues:
+    get:
+      tags:
+        - Reports
+      summary: Get outstanding dues report
+      description: Returns comprehensive pending dues report grouped by program, batch, and section.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: program_id
+          schema:
+            type: integer
+          example: 3
+        - in: query
+          name: academic_year_id
+          schema:
+            type: integer
+          example: 2
+      responses:
+        '200':
+          description: Outstanding dues report fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

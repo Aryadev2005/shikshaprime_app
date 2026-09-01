@@ -1,0 +1,1133 @@
+openapi: 3.0.0
+info:
+  title: Lead Management Service API
+  description: Comprehensive API documentation for Admissions CRM and Lead Management Service in ShikshaPrime College Management System, supporting multi-channel lead ingestion (website, public inquiries, Facebook Lead Ads, Google Ads, WhatsApp), counselor assignment, qualification workflows, follow-ups, communication logging, campus visits, bulk upload, and conversion to student admission applications.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service status and metadata
+  - name: Public Inquiries
+    description: Public inquiry and website lead capture endpoints (no authentication required)
+  - name: Leads
+    description: Core admissions lead management, updates, follow-ups, qualification, nurturing, and lifecycle workflows
+  - name: Counselors
+    description: Counselor discovery and lead-rule allocation matching
+  - name: Webhooks
+    description: Social media and ad platform webhook ingestions (Meta Facebook Ads, Google Ads, WhatsApp Cloud API)
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: An error occurred
+      additionalProperties: true
+
+    CreatePublicLeadRequest:
+      type: object
+      required:
+        - name
+        - phone
+      properties:
+        name:
+          type: string
+          example: "Rahul Sharma"
+        phone:
+          type: string
+          example: "9876543210"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "rahul.sharma@example.com"
+        parent_name:
+          type: string
+          nullable: true
+          example: "Suresh Sharma"
+        parent_phone:
+          type: string
+          nullable: true
+          example: "9876543211"
+        academic_qualification:
+          type: string
+          nullable: true
+          example: "12th Standard / HSC"
+        passing_year:
+          type: string
+          nullable: true
+          example: "2026"
+        preferred_course:
+          type: string
+          nullable: true
+          example: "B.Tech Computer Science"
+        preferred_mode:
+          type: string
+          nullable: true
+          example: "Full-time Campus"
+        communication_preference:
+          type: string
+          enum: [PHONE, EMAIL, WHATSAPP, SMS]
+          default: WHATSAPP
+          example: WHATSAPP
+        notes:
+          type: string
+          nullable: true
+          example: "Inquired about scholarship cutoff marks"
+        lead_source:
+          type: string
+          default: "WEBSITE"
+          example: "WEBSITE"
+
+    CreateLeadRequest:
+      type: object
+      required:
+        - name
+        - lead_source
+      properties:
+        name:
+          type: string
+          example: "Ananya Patel"
+        phone:
+          type: string
+          example: "9876543210"
+        email:
+          type: string
+          format: email
+          example: "ananya.patel@example.com"
+        date_of_birth:
+          type: string
+          format: date
+          example: "2008-04-12"
+        gender:
+          type: string
+          enum: [MALE, FEMALE, OTHER]
+          example: FEMALE
+        address:
+          type: string
+          example: "45 MG Road, Bangalore"
+        current_school:
+          type: string
+          example: "National Public School"
+        current_class:
+          type: string
+          example: "12th Grade"
+        marks_cgpa:
+          type: string
+          example: "92%"
+        preferred_course:
+          type: string
+          example: "BBA"
+        preferred_stream:
+          type: string
+          example: "Finance"
+        academic_qualification:
+          type: string
+          example: "Higher Secondary"
+        passing_year:
+          type: string
+          example: "2026"
+        parent_name:
+          type: string
+          example: "Vikram Patel"
+        parent_mobile:
+          type: string
+          example: "9876543212"
+        parent_occupation:
+          type: string
+          example: "Business"
+        parent_income_range:
+          type: string
+          example: "10-15 LPA"
+        preferred_mode:
+          type: string
+          example: "Regular"
+        communication_preference:
+          type: string
+          enum: [PHONE, EMAIL, WHATSAPP, SMS]
+          example: WHATSAPP
+        notes:
+          type: string
+          example: "Interested in hostel accommodation"
+        lead_source:
+          type: string
+          example: "EDUCATION_FAIR"
+        campaign_id:
+          type: string
+          nullable: true
+          example: "CAMP_2026_BLR"
+        utm_source:
+          type: string
+          nullable: true
+          example: "google"
+        utm_medium:
+          type: string
+          nullable: true
+          example: "cpc"
+        utm_campaign:
+          type: string
+          nullable: true
+          example: "admissions_2026"
+        assigned_to:
+          type: integer
+          nullable: true
+          description: User ID of counselor
+          example: 5
+        territory:
+          type: string
+          nullable: true
+          example: "South Bangalore"
+        course_category:
+          type: string
+          nullable: true
+          example: "Management"
+
+    UpdateLeadRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Ananya Patel"
+        phone:
+          type: string
+          example: "9876543210"
+        email:
+          type: string
+          format: email
+          example: "ananya.patel@example.com"
+        date_of_birth:
+          type: string
+          format: date
+          example: "2008-04-12"
+        gender:
+          type: string
+          example: FEMALE
+        address:
+          type: string
+          example: "45 MG Road, Bangalore"
+        current_school:
+          type: string
+          example: "National Public School"
+        current_class:
+          type: string
+          example: "12th Grade"
+        marks_cgpa:
+          type: string
+          example: "94%"
+        preferred_course:
+          type: string
+          example: "BBA"
+        preferred_stream:
+          type: string
+          example: "Marketing"
+        academic_qualification:
+          type: string
+          example: "Higher Secondary"
+        passing_year:
+          type: string
+          example: "2026"
+        parent_name:
+          type: string
+          example: "Vikram Patel"
+        parent_mobile:
+          type: string
+          example: "9876543212"
+        parent_occupation:
+          type: string
+          example: "Business"
+        parent_income_range:
+          type: string
+          example: "10-15 LPA"
+        preferred_mode:
+          type: string
+          example: "Regular"
+        communication_preference:
+          type: string
+          example: WHATSAPP
+        notes:
+          type: string
+          example: "Updated preferences after counseling call"
+        lead_source:
+          type: string
+          example: "EDUCATION_FAIR"
+        assigned_to:
+          type: integer
+          nullable: true
+          example: 5
+        territory:
+          type: string
+          example: "South Bangalore"
+        course_category:
+          type: string
+          example: "Management"
+
+    AddFollowupRequest:
+      type: object
+      required:
+        - followup_type
+        - followup_date
+      properties:
+        followup_type:
+          type: string
+          enum: [CALL, WHATSAPP, EMAIL, IN_PERSON, SMS]
+          example: CALL
+        followup_date:
+          type: string
+          format: date-time
+          example: "2026-08-25T10:30:00.000Z"
+        next_followup_date:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-08-28T10:30:00.000Z"
+        notes:
+          type: string
+          example: "Student asked for syllabus details and fee breakdown"
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, CANCELLED]
+          default: PENDING
+          example: COMPLETED
+        ai_call_summary:
+          type: string
+          nullable: true
+          example: "Positive conversation. High inclination for CS branch."
+        ai_sentiment:
+          type: string
+          nullable: true
+          example: "POSITIVE"
+
+    AddCommunicationRequest:
+      type: object
+      required:
+        - channel
+        - message_body
+      properties:
+        channel:
+          type: string
+          enum: [CALL, SMS, EMAIL, WHATSAPP, IN_PERSON]
+          example: WHATSAPP
+        message_body:
+          type: string
+          example: "Dear Ananya, thanks for your interest in our BBA program. Here is the link to download the brochure."
+        delivery_status:
+          type: string
+          enum: [SENT, DELIVERED, READ, FAILED]
+          default: SENT
+          example: DELIVERED
+
+    AssignLeadRequest:
+      type: object
+      required:
+        - assigned_to
+      properties:
+        assigned_to:
+          type: integer
+          description: Counselor User ID
+          example: 5
+        assigned_by:
+          type: integer
+          nullable: true
+          description: Admin/Team Lead User ID performing assignment
+          example: 1
+
+    QualifyLeadRequest:
+      type: object
+      required:
+        - outcome
+      properties:
+        outcome:
+          type: string
+          enum: ["Qualified", "Warm", "Hot", "Not Interested", "Follow-Up Required"]
+          example: "Hot"
+        notes:
+          type: string
+          nullable: true
+          example: "Candidate confirmed entrance test score and is ready for admission"
+        followup_date:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-08-26T11:00:00.000Z"
+        followup_type:
+          type: string
+          enum: [CALL, WHATSAPP, EMAIL, IN_PERSON, SMS]
+          nullable: true
+          example: CALL
+
+    LeadNurtureRequest:
+      type: object
+      required:
+        - template
+        - channel
+      properties:
+        template:
+          type: string
+          enum: [COURSE_BROCHURE, FEE_STRUCTURE, SCHOLARSHIP_DETAILS, CAMPUS_PHOTOS, APPLICATION_LINK]
+          example: COURSE_BROCHURE
+        channel:
+          type: string
+          enum: [WHATSAPP, EMAIL, SMS]
+          example: WHATSAPP
+        notes:
+          type: string
+          nullable: true
+          example: "Automated brochure dispatch"
+
+    CampusVisitRequest:
+      type: object
+      required:
+        - visit_date
+        - visit_time
+      properties:
+        visit_date:
+          type: string
+          format: date
+          example: "2026-09-02"
+        visit_time:
+          type: string
+          example: "14:00"
+        parent_attending:
+          type: boolean
+          example: true
+        course_interest:
+          type: string
+          nullable: true
+          example: "B.Tech AI & Data Science"
+        counselor_notes:
+          type: string
+          nullable: true
+          example: "Hostel and lab tour requested"
+
+    ConvertLeadRequest:
+      type: object
+      properties:
+        remarks:
+          type: string
+          nullable: true
+          example: "Converted to applicant after registration fee receipt"
+
+    BulkLeadUploadRequest:
+      type: object
+      required:
+        - rows
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - phone
+            properties:
+              name:
+                type: string
+                example: "Siddharth Verma"
+              phone:
+                type: string
+                example: "9876543219"
+              email:
+                type: string
+                example: "sid.verma@example.com"
+              preferred_course:
+                type: string
+                example: "B.Com"
+              preferred_stream:
+                type: string
+                example: "Accounting"
+              lead_source:
+                type: string
+                example: "BULK_EXCEL"
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/lead-management/public/leads:
+    post:
+      tags:
+        - Public Inquiries
+      summary: Create public lead inquiry
+      description: Captures public lead from landing page / website contact forms without requiring authentication.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePublicLeadRequest'
+      responses:
+        '201':
+          description: Lead created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Name and phone are required
+
+  /api/lead-management:
+    get:
+      tags:
+        - Leads
+      summary: Get lead list
+      description: Returns paginated leads with multi-filter search, stage, source, date ranges, and sorting.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by lead name, phone, or email
+          example: "Rahul"
+        - in: query
+          name: lead_source
+          schema:
+            type: string
+          example: "WEBSITE"
+        - in: query
+          name: lead_stage
+          schema:
+            type: string
+            enum: [NEW, CONTACTED, ASSIGNED, FOLLOWUP, QUALIFIED, WARM, HOT, WALK_IN_SCHEDULED, CONVERTED, LOST]
+          example: "NEW"
+        - in: query
+          name: assigned_to
+          schema:
+            type: integer
+          example: 5
+        - in: query
+          name: campaign_id
+          schema:
+            type: string
+          example: "CAMP_2026"
+        - in: query
+          name: start_date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-01"
+        - in: query
+          name: end_date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-31"
+        - in: query
+          name: sort_by
+          schema:
+            type: string
+            default: "created_at"
+          example: "created_at"
+        - in: query
+          name: sort_order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: "desc"
+          example: "desc"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Leads fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Leads
+      summary: Create new lead manually
+      description: Creates a new admissions lead with student, academic, parent, and attribution details.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeadRequest'
+      responses:
+        '201':
+          description: Lead created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing name or lead_source
+        '401':
+          description: Unauthorized
+
+  /api/lead-management/{id}:
+    get:
+      tags:
+        - Leads
+      summary: Get lead details
+      description: Returns full lead profile including assigned counselor, follow-up history, communications, campus visits, and AI scores.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Lead details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid lead ID
+        '404':
+          description: Lead not found
+
+  /api/lead-management/{id}/update:
+    patch:
+      tags:
+        - Leads
+      summary: Update lead details
+      description: Updates student academic information, preferences, contact details, or counselor assignment.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLeadRequest'
+      responses:
+        '201':
+          description: Lead updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid lead ID or data
+        '404':
+          description: Lead not found
+
+  /api/lead-management/{id}/followups:
+    post:
+      tags:
+        - Leads
+      summary: Add follow-up record
+      description: Logs a new counselor follow-up attempt and auto-updates lead stage to FOLLOWUP.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFollowupRequest'
+      responses:
+        '200':
+          description: Follow-up added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '404':
+          description: Lead not found
+
+  /api/lead-management/{id}/communications:
+    post:
+      tags:
+        - Leads
+      summary: Log communication entry
+      description: Records an outbound or inbound message (WhatsApp, Email, Call, SMS) and auto-updates lead stage to CONTACTED.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCommunicationRequest'
+      responses:
+        '200':
+          description: Communication logged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '404':
+          description: Lead not found
+
+  /api/lead-management/{id}/assign:
+    post:
+      tags:
+        - Leads
+      summary: Assign lead to counselor
+      description: Assigns lead to a counselor, creates assignment history log, and initiates first follow-up task.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignLeadRequest'
+      responses:
+        '200':
+          description: Lead assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: assigned_to is required
+        '404':
+          description: Lead not found
+
+  /api/lead-management/{id}/qualify:
+    post:
+      tags:
+        - Leads
+      summary: Qualify lead
+      description: Updates lead qualification status (Hot, Warm, Qualified, Not Interested, Follow-Up Required) and optional scheduled follow-up.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QualifyLeadRequest'
+      responses:
+        '200':
+          description: Lead qualified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid qualification outcome
+        '404':
+          description: Lead not found
+
+  /api/lead-management/{id}/nurture:
+    post:
+      tags:
+        - Leads
+      summary: Send nurturing template message
+      description: Dispatches predefined nurturing material (brochure, fee structure, scholarship, application link) via WhatsApp/Email.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadNurtureRequest'
+      responses:
+        '200':
+          description: Nurturing message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid template or channel
+        '404':
+          description: Lead not found
+
+  /api/lead-management/{id}/campus-visit:
+    post:
+      tags:
+        - Leads
+      summary: Schedule a campus visit
+      description: Schedules a physical campus visit appointment and moves lead stage to WALK_IN_SCHEDULED.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampusVisitRequest'
+      responses:
+        '200':
+          description: Campus visit scheduled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Visit date and time are required
+        '404':
+          description: Lead not found
+
+  /api/lead-management/{id}/convert:
+    post:
+      tags:
+        - Leads
+      summary: Convert lead to applicant
+      description: Converts a qualified lead to CONVERTED status and creates a conversion record.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertLeadRequest'
+      responses:
+        '200':
+          description: Lead converted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Lead not found
+
+  /api/lead-management/counselors:
+    get:
+      tags:
+        - Counselors
+      summary: Get list of counselors
+      description: Returns active admission counselors available for assignment.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Counselors fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/lead-management/{id}/eligible-counsellors:
+    get:
+      tags:
+        - Counselors
+      summary: Get eligible counselors for lead
+      description: Evaluates automated assignment rules (course, territory, source) and returns matching counselors.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Eligible counselors fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Lead not found
+
+  /api/lead-management/bulk-upload:
+    post:
+      tags:
+        - Leads
+      summary: Bulk upload leads
+      description: Ingests array of lead rows with deduplication by phone number and returns success/failure metrics.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkLeadUploadRequest'
+      responses:
+        '200':
+          description: Leads uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid bulk data
+
+  /api/lead-management/webhooks/facebook:
+    get:
+      tags:
+        - Webhooks
+      summary: Verify Meta / Facebook Webhook subscription
+      description: Handles Meta Graph API webhook challenge handshake (`hub.challenge`).
+      parameters:
+        - in: query
+          name: hub.mode
+          schema:
+            type: string
+          example: "subscribe"
+        - in: query
+          name: hub.verify_token
+          schema:
+            type: string
+          example: "YOUR_VERIFY_TOKEN"
+        - in: query
+          name: hub.challenge
+          schema:
+            type: string
+          example: "1158201444"
+      responses:
+        '200':
+          description: Webhook challenge verification successful
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "1158201444"
+        '403':
+          description: Forbidden - Invalid verify token
+    post:
+      tags:
+        - Webhooks
+      summary: Ingest Meta / Facebook Lead Ad forms
+      description: Ingests real-time lead capture form submissions from Facebook and Instagram Lead Ads.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Facebook lead ingested successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Error processing Facebook lead
+
+  /api/lead-management/webhooks/google:
+    post:
+      tags:
+        - Webhooks
+      summary: Ingest Google Lead Form ads webhook
+      description: Ingests Google Search and YouTube Lead Form extensions with secret key validation.
+      parameters:
+        - in: header
+          name: x-google-key
+          schema:
+            type: string
+          description: Google Lead Form secret key header
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                google_key:
+                  type: string
+                test_lead:
+                  type: boolean
+                user_column_data:
+                  type: array
+                  items:
+                    type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Google lead ingested or verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '403':
+          description: Invalid Google secret
+
+  /api/lead-management/webhooks/whatsapp:
+    get:
+      tags:
+        - Webhooks
+      summary: Verify WhatsApp Cloud API Webhook subscription
+      description: Handles WhatsApp Webhook verification handshake.
+      parameters:
+        - in: query
+          name: hub.mode
+          schema:
+            type: string
+          example: "subscribe"
+        - in: query
+          name: hub.verify_token
+          schema:
+            type: string
+        - in: query
+          name: hub.challenge
+          schema:
+            type: string
+      responses:
+        '200':
+          description: WhatsApp challenge verified
+          content:
+            text/plain:
+              schema:
+                type: string
+        '403':
+          description: Invalid token
+    post:
+      tags:
+        - Webhooks
+      summary: Ingest WhatsApp inbound message lead
+      description: Captures new student leads from inbound WhatsApp inquiries.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: WhatsApp lead processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

@@ -168,16 +168,11 @@ const FILTER_CHIPS: { key: FilterKey; label: string }[] = [
 export const AssignmentsScreen: React.FC<Props> = ({ navigation }) => {
   const [filter, setFilter] = useState<FilterKey>('all');
   const { data, isLoading, isError, refetch } = useAssignmentList();
-  const token = useAuthStore((s) => s.token);
 
-  const isTeacher = (() => {
-    try {
-      const payload = JSON.parse(atob((token ?? '').split('.')[1]));
-      return (payload as { role?: string }).role === 'teacher';
-    } catch {
-      return false;
-    }
-  })();
+  // Canonical role from the auth store. This previously re-decoded the JWT with
+  // `atob`, which throws on base64url segments ('-'/'_') and fell back to
+  // `false` — silently showing teachers the student submission UI.
+  const isTeacher = useAuthStore((s) => s.role) === 'teacher';
 
   const assignments: Assignment[] = data?.assignments ?? [];
   const counters = data?.counters;

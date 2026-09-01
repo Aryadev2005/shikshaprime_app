@@ -1,0 +1,883 @@
+openapi: 3.0.0
+info:
+  title: Inventory Management Service API
+  description: Comprehensive API documentation for Fixed Asset & Inventory Management Service in ShikshaPrime College Management System, supporting multi-department asset tracking, QR/barcode generation, physical verification audits, vendor management, multi-item procurement workflows, and automated financial journal posting.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata endpoints
+  - name: Dashboard
+    description: Inventory statistics, category counts, valuation totals, and recent activity logs
+  - name: Categories
+    description: Asset category management and classification
+  - name: Departments
+    description: Internal college departments and custodial allocation
+  - name: Vendors
+    description: Supplier and vendor master directory
+  - name: Locations
+    description: Physical campus, building, lab, and classroom locations
+  - name: Assets
+    description: Fixed asset registry, single and bulk asset creation with QR/Barcode generation
+  - name: Verifications
+    description: Periodic physical asset verification checks and audit histories
+  - name: Procurement Requests
+    description: Purchase requisitions, approval lifecycle, asset fulfillment, and finance ledger journal synchronization
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "error"
+        message:
+          type: string
+          example: "An error occurred while processing the request"
+      additionalProperties: true
+
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "IT Hardware & Equipment"
+        description:
+          type: string
+          nullable: true
+          example: "Computers, servers, monitors, and networking devices"
+
+    CreateDepartmentRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Computer Science & Engineering"
+        head_of_department_id:
+          type: integer
+          nullable: true
+          description: User ID of department HOD
+          example: 12
+
+    CreateVendorRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Dell Technologies India Pvt Ltd"
+        contact_person:
+          type: string
+          nullable: true
+          example: "Ramesh Sharma"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "sales@dell.co.in"
+        phone:
+          type: string
+          nullable: true
+          example: "080-45678900"
+        address:
+          type: string
+          nullable: true
+          example: "Plot 12, Divyasree Greens, Bangalore"
+
+    CreateLocationRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Computer Lab 3 (Ground Floor)"
+        building:
+          type: string
+          nullable: true
+          example: "Academic Block A"
+        campus:
+          type: string
+          nullable: true
+          example: "Main Campus"
+        description:
+          type: string
+          nullable: true
+          example: "Capacity 60 workstations with high-speed LAN"
+
+    CreateAssetRequest:
+      type: object
+      required:
+        - name
+        - category_id
+      properties:
+        name:
+          type: string
+          example: "Dell OptiPlex 7090 Desktop"
+        category_id:
+          type: integer
+          description: Category ID
+          example: 1
+        inventory_department_id:
+          type: integer
+          nullable: true
+          example: 1
+        location_id:
+          type: integer
+          nullable: true
+          example: 1
+        vendor_id:
+          type: integer
+          nullable: true
+          example: 1
+        asset_code:
+          type: string
+          nullable: true
+          description: Unique asset tracking code (auto-generated if omitted)
+          example: "AST-2026-001"
+        serial_number:
+          type: string
+          nullable: true
+          example: "SN-DELL-987654"
+        barcode:
+          type: string
+          nullable: true
+          example: "BC-2026-001"
+        qr_code:
+          type: string
+          nullable: true
+          example: "QR-2026-001"
+        purchase_cost:
+          type: number
+          nullable: true
+          example: 55000.00
+        current_value:
+          type: number
+          nullable: true
+          example: 50000.00
+        purchase_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-08-01"
+        warranty_expiry:
+          type: string
+          format: date
+          nullable: true
+          example: "2029-08-01"
+        status:
+          type: string
+          enum: [Active, Maintenance, Inactive, Disposed, Lost]
+          default: Active
+          example: Active
+        quantity:
+          type: integer
+          default: 1
+          description: Set >1 for bulk auto-generating multiple assets with sequential codes
+          example: 1
+
+    CreateVerificationRequest:
+      type: object
+      required:
+        - asset_id
+      properties:
+        asset_id:
+          type: integer
+          description: Asset database ID
+          example: 1
+        status:
+          type: string
+          enum: [Active, Maintenance, Inactive, Disposed, Lost]
+          default: Active
+          example: Active
+        remarks:
+          type: string
+          nullable: true
+          example: "Physical check verified in Lab 3. Working in optimal condition."
+        verification_date:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-08-22T10:00:00.000Z"
+
+    ProcurementItemRequest:
+      type: object
+      required:
+        - item_name
+        - quantity
+        - estimated_unit_cost
+      properties:
+        item_name:
+          type: string
+          example: "Dell 24-inch IPS Monitor"
+        category_id:
+          type: integer
+          nullable: true
+          example: 1
+        quantity:
+          type: integer
+          example: 10
+        estimated_unit_cost:
+          type: number
+          example: 12000.00
+        warranty_months:
+          type: integer
+          nullable: true
+          example: 36
+        location_id:
+          type: integer
+          nullable: true
+          example: 1
+        vendor_id:
+          type: integer
+          nullable: true
+          example: 1
+        specifications:
+          type: string
+          nullable: true
+          example: "FHD 1080p, HDMI/DisplayPort, 75Hz"
+
+    CreateProcurementRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          example: "Annual Lab Hardware Upgrade Q3 2026"
+        request_number:
+          type: string
+          nullable: true
+          description: Custom requisition number (auto-generated if omitted)
+          example: "PRQ-2026-001"
+        inventory_department_id:
+          type: integer
+          nullable: true
+          example: 1
+        vendor_id:
+          type: integer
+          nullable: true
+          example: 1
+        justification:
+          type: string
+          nullable: true
+          example: "Replacement of obsolete lab workstations for new AI lab curriculum"
+        priority:
+          type: string
+          enum: [Low, Medium, High, Urgent]
+          default: Medium
+          example: High
+        status:
+          type: string
+          enum: [Draft, Submitted, Approved, Rejected, Completed]
+          default: Draft
+          example: Submitted
+        total_estimated_budget:
+          type: number
+          nullable: true
+          example: 120000.00
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcurementItemRequest'
+
+    UpdateProcurementStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [Draft, Submitted, Approved, Rejected, Completed]
+          example: "Approved"
+        remarks:
+          type: string
+          nullable: true
+          example: "Budget approved by Principal and Finance department"
+        approved_by:
+          type: integer
+          nullable: true
+          description: User ID of approver
+          example: 1
+
+    CompleteProcurementRequest:
+      type: object
+      properties:
+        createAssets:
+          type: boolean
+          default: true
+          description: When true, automatically instantiates asset master records, barcode/QR codes, and initial verifications for all received items
+          example: true
+        vendor_id:
+          type: integer
+          nullable: true
+          description: Override vendor ID if missing in items
+          example: 1
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/inventory/admin/dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Get inventory dashboard overview
+      description: Returns overall inventory statistics, total asset counts, valuation, category breakdown, department allocation, and recent activity logs.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/inventory/admin/categories:
+    get:
+      tags:
+        - Categories
+      summary: List all asset categories
+      description: Returns list of all defined asset categories.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Categories fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Categories
+      summary: Create an asset category
+      description: Creates a new category classification for assets.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Category name is required
+
+  /api/inventory/admin/categories/{id}:
+    delete:
+      tags:
+        - Categories
+      summary: Delete an asset category
+      description: Deletes an asset category by ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Category not found
+
+  /api/inventory/admin/departments:
+    get:
+      tags:
+        - Departments
+      summary: List inventory departments
+      description: Returns list of all departments registered in the inventory system.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Departments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Departments
+      summary: Create an inventory department
+      description: Registers a new department for custodial asset allocation.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDepartmentRequest'
+      responses:
+        '201':
+          description: Department created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Department name is required
+
+  /api/inventory/admin/departments/{id}:
+    delete:
+      tags:
+        - Departments
+      summary: Delete an inventory department
+      description: Deletes an inventory department by ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Department deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Department not found
+
+  /api/inventory/admin/vendors:
+    get:
+      tags:
+        - Vendors
+      summary: List all suppliers and vendors
+      description: Returns list of registered suppliers, contact persons, and address details.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Vendors fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Vendors
+      summary: Create a vendor
+      description: Registers a new supplier/vendor in the inventory system.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVendorRequest'
+      responses:
+        '201':
+          description: Vendor created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Vendor name is required
+
+  /api/inventory/admin/vendors/{id}:
+    delete:
+      tags:
+        - Vendors
+      summary: Delete a vendor
+      description: Deletes a supplier/vendor by ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Vendor deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Vendor not found
+
+  /api/inventory/admin/locations:
+    get:
+      tags:
+        - Locations
+      summary: List inventory physical locations
+      description: Returns all campus buildings, labs, libraries, and storage rooms.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Locations fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Locations
+      summary: Create an inventory location
+      description: Registers a new physical room or building for asset placement.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLocationRequest'
+      responses:
+        '201':
+          description: Location created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Location name is required
+
+  /api/inventory/admin/assets:
+    get:
+      tags:
+        - Assets
+      summary: List all assets
+      description: Returns list of all fixed assets along with their latest verification audit status.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Assets fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Assets
+      summary: Create asset(s)
+      description: Creates a single asset or bulk sequential assets (when quantity > 1), automatically generating unique asset codes, QR codes, and initial verification entries.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssetRequest'
+      responses:
+        '201':
+          description: Asset(s) created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request or duplicate code constraint violation
+
+  /api/inventory/admin/assets/{id}:
+    delete:
+      tags:
+        - Assets
+      summary: Delete an asset
+      description: Deletes an asset record by database ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Asset deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Asset not found
+
+  /api/inventory/admin/verifications:
+    post:
+      tags:
+        - Verifications
+      summary: Record asset verification audit
+      description: Records or updates a physical audit verification check for an asset.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVerificationRequest'
+      responses:
+        '201':
+          description: Verification recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Asset ID is required
+
+  /api/inventory/admin/assets/{id}/verifications:
+    get:
+      tags:
+        - Verifications
+      summary: Get verification history for asset
+      description: Returns historical verification audit logs for a specific asset.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Verifications fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/inventory/admin/procurement-requests:
+    get:
+      tags:
+        - Procurement Requests
+      summary: List all procurement requests
+      description: Returns all procurement purchase requests including their associated item details.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Procurement requests fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Procurement Requests
+      summary: Create a procurement purchase request
+      description: Creates a procurement request with multi-item line items and estimated budgets under a transaction.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProcurementRequest'
+      responses:
+        '201':
+          description: Procurement request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+
+  /api/inventory/admin/procurement-requests/{id}:
+    delete:
+      tags:
+        - Procurement Requests
+      summary: Delete a procurement request
+      description: Deletes a procurement request and its child procurement item line items under a transaction.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Procurement request deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Procurement request not found
+
+  /api/inventory/admin/procurement-requests/{id}/status:
+    put:
+      tags:
+        - Procurement Requests
+      summary: Update procurement request approval status
+      description: Updates procurement request status (Approved, Rejected, Submitted) and logs activity.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProcurementStatusRequest'
+      responses:
+        '200':
+          description: Procurement request status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Procurement request not found
+
+  /api/inventory/admin/procurement-requests/{id}/complete:
+    patch:
+      tags:
+        - Procurement Requests
+      summary: Complete procurement request & instantiate assets
+      description: Marks an approved procurement request as Completed, automatically creates fixed asset master records and initial verifications, and posts journal vouchers to the Finance Service.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteProcurementRequest'
+      responses:
+        '200':
+          description: Procurement request completed and assets created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Only Approved requests can be marked as Completed
+        '404':
+          description: Procurement request not found

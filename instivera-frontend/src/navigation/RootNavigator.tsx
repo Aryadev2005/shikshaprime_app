@@ -58,17 +58,6 @@ const RepositoryStack = createNativeStackNavigator<RepositoryStackParamList>();
 type RootStackParamList = { Auth: undefined };
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
-// ─── JWT helper ───────────────────────────────────────────────────────────────
-
-const decodeJwtRole = (token: string): string | null => {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return (payload as { role?: string }).role ?? null;
-  } catch {
-    return null;
-  }
-};
-
 // ─── Teacher home screen (inline) ────────────────────────────────────────────
 
 const TeacherHomeScreen: React.FC<{
@@ -270,8 +259,11 @@ const TAB_ICONS_ACTIVE: TabIconMap = {
   Profile: 'account-circle',
 };
 
-const MainTabs: React.FC<{ token: string }> = ({ token }) => {
-  const role = decodeJwtRole(token);
+const MainTabs: React.FC = () => {
+  // Canonical role from the auth store — the old inline decoder called `atob`
+  // on a base64url JWT segment, which throws on '-'/'_' and made every user
+  // fall back to the teacher UI.
+  const role = useAuthStore((s) => s.role);
 
   return (
     <Tab.Navigator
@@ -369,7 +361,7 @@ export const RootNavigator: React.FC = () => {
   if (token) {
     return (
       <NavigationContainer>
-        <MainTabs token={token} />
+        <MainTabs />
       </NavigationContainer>
     );
   }

@@ -1,0 +1,2004 @@
+openapi: 3.0.0
+info:
+  title: Teacher Service API
+  description: Comprehensive API documentation for Teacher Service in ShikshaPrime College Management System.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Health and status checks
+  - name: Faculty
+    description: Faculty management, profiles, search, and statistics
+  - name: Teacher Dashboard
+    description: Teacher dashboard aggregations and views
+  - name: Assignments
+    description: Assignment creation, updates, attachments, and assignments assigned to teachers
+  - name: Submissions
+    description: Student assignment submissions and teacher grading
+  - name: Metadata
+    description: Metadata endpoints for programs, departments, semesters, subjects, academic years, and classes
+  - name: Staff Attendance
+    description: Staff daily attendance tracking, bulk operations, overviews, summaries, and reports
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          oneOf:
+            - type: string
+              example: success
+            - type: integer
+              example: 1
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: An error occurred
+        data:
+          type: object
+          nullable: true
+      additionalProperties: true
+
+    FacultySubjectAssignment:
+      type: object
+      properties:
+        program:
+          type: integer
+          example: 1
+        academicYear:
+          type: integer
+          example: 1
+        class:
+          type: integer
+          example: 1
+        subject:
+          type: integer
+          example: 1
+        assignedDate:
+          type: string
+          format: date
+          example: "2026-01-10"
+
+    FacultyCreateRequest:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - department_id
+      properties:
+        first_name:
+          type: string
+          example: Rahul
+        last_name:
+          type: string
+          example: Sharma
+        designation:
+          type: string
+          example: Assistant Professor
+        department_id:
+          type: integer
+          example: 1
+        qualification:
+          type: string
+          example: Ph.D in Computer Science
+        experience_years:
+          type: integer
+          example: 5
+        phone:
+          type: string
+          example: "9876543210"
+        email:
+          type: string
+          example: rahul.sharma@example.com
+        emergency_contact:
+          type: string
+          example: "9876543211"
+        address:
+          type: string
+          example: 123 University Campus, Academic Block
+        date_of_birth:
+          type: string
+          format: date
+          example: "1988-05-15"
+        date_of_joining:
+          type: string
+          format: date
+          example: "2020-07-01"
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacultySubjectAssignment'
+
+    FacultyUpdateRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          example: Rahul
+        last_name:
+          type: string
+          example: Sharma
+        designation:
+          type: string
+          example: Associate Professor
+        department_id:
+          type: integer
+          example: 1
+        qualification:
+          type: string
+          example: Ph.D in Computer Science & Engineering
+        experience_years:
+          type: integer
+          example: 6
+        phone:
+          type: string
+          example: "9876543210"
+        email:
+          type: string
+          example: rahul.sharma@example.com
+        emergency_contact:
+          type: string
+          example: "9876543211"
+        address:
+          type: string
+          example: 123 University Campus, Academic Block
+        date_of_birth:
+          type: string
+          format: date
+          example: "1988-05-15"
+        date_of_joining:
+          type: string
+          format: date
+          example: "2020-07-01"
+        is_active:
+          type: integer
+          example: 1
+
+    CreateAssignmentRequest:
+      type: object
+      required:
+        - title
+        - type
+        - subject_id
+        - due_date
+        - due_time
+      properties:
+        title:
+          type: string
+          example: Data Structures & Algorithms Assignment 1
+        description:
+          type: string
+          example: Implement and analyze Balanced Binary Search Trees (AVL & Red-Black).
+        detailed_instructions:
+          type: string
+          example: Submit your source code along with a PDF report containing time complexity benchmarks.
+        type:
+          type: string
+          enum: [Assignment, Homework]
+          example: Assignment
+        subject_id:
+          type: integer
+          example: 1
+        program_id:
+          type: integer
+          example: 1
+        semester_id:
+          type: integer
+          example: 1
+        academic_year_id:
+          type: integer
+          example: 1
+        class_id:
+          type: integer
+          example: 1
+        due_date:
+          type: string
+          format: date
+          example: "2026-09-30"
+        due_time:
+          type: string
+          example: "23:59:00"
+        maximum_marks:
+          type: integer
+          default: 100
+          example: 100
+        allow_late_submissions:
+          type: boolean
+          default: false
+          example: false
+        send_notification:
+          type: boolean
+          default: true
+          example: true
+
+    UpdateAssignmentRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Data Structures & Algorithms Assignment 1 - Updated
+        description:
+          type: string
+          example: Updated instructions for AVL tree balancing.
+        detailed_instructions:
+          type: string
+          example: Code + PDF report with updated test cases.
+        type:
+          type: string
+          enum: [Assignment, Homework]
+          example: Assignment
+        subject_id:
+          type: integer
+          example: 1
+        program_id:
+          type: integer
+          example: 1
+        semester_id:
+          type: integer
+          example: 1
+        academic_year_id:
+          type: integer
+          example: 1
+        class_id:
+          type: integer
+          example: 1
+        due_date:
+          type: string
+          format: date
+          example: "2026-10-05"
+        due_time:
+          type: string
+          example: "23:59:00"
+        maximum_marks:
+          type: integer
+          example: 100
+        allow_late_submissions:
+          type: boolean
+          example: true
+        send_notification:
+          type: boolean
+          example: false
+
+    AssignmentLegacyRequest:
+      type: object
+      required:
+        - program_id
+        - academic_year_id
+        - class_id
+      properties:
+        program_id:
+          type: integer
+          example: 1
+        class_id:
+          type: integer
+          example: 1
+        semester_id:
+          type: integer
+          example: 1
+        academic_year_id:
+          type: integer
+          example: 1
+        is_class_incharge:
+          type: boolean
+          default: false
+          example: false
+        subject_id:
+          type: integer
+          example: 1
+
+    GradeSubmissionRequest:
+      type: object
+      required:
+        - marks_obtained
+      properties:
+        marks_obtained:
+          type: number
+          example: 88.5
+        feedback:
+          type: string
+          example: Excellent implementation of BST and AVL rotations. Clean code structure.
+
+    StaffAttendanceRequest:
+      type: object
+      required:
+        - employee_id
+        - attendance_date
+        - attendance_status
+      properties:
+        employee_id:
+          type: string
+          example: EMP-0001
+        attendance_date:
+          type: string
+          format: date
+          example: "2026-08-22"
+        attendance_status:
+          type: string
+          enum: [PRESENT, ABSENT, LATE, HALF_DAY, HOLIDAY, LEAVE, ON_DUTY]
+          example: PRESENT
+        check_in_time:
+          type: string
+          example: "09:00:00"
+        check_out_time:
+          type: string
+          example: "17:30:00"
+        late_minutes:
+          type: integer
+          example: 0
+        attendance_type:
+          type: string
+          enum: [MANUAL, BIOMETRIC, RFID, MOBILE_APP]
+          example: MANUAL
+        marked_by:
+          type: string
+          example: ADMIN
+        marked_by_type:
+          type: string
+          enum: [ADMIN, SYSTEM, SELF]
+          example: ADMIN
+        remarks:
+          type: string
+          example: Regular attendance
+        absence_reason:
+          type: string
+          example: ""
+
+    BulkStaffAttendanceItem:
+      type: object
+      required:
+        - employee_id
+        - status
+      properties:
+        employee_id:
+          type: string
+          example: EMP-0001
+        employee_name:
+          type: string
+          example: Dr. Rahul Sharma
+        department_id:
+          type: integer
+          example: 1
+        designation:
+          type: string
+          example: Assistant Professor
+        status:
+          type: string
+          enum: [PRESENT, ABSENT, LATE, HALF_DAY, HOLIDAY, LEAVE, ON_DUTY]
+          example: PRESENT
+
+    BulkStaffAttendanceRequest:
+      type: object
+      required:
+        - date
+        - staff
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-08-22"
+        marked_by:
+          type: string
+          example: ADMIN
+        staff:
+          type: array
+          items:
+            $ref: '#/components/schemas/BulkStaffAttendanceItem'
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Get teacher service status
+      description: Returns service metadata and status.
+      responses:
+        '200':
+          description: Teacher service is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/teacher/health:
+    get:
+      tags:
+        - Service
+      summary: Health check
+      description: Lightweight health check endpoint.
+      responses:
+        '200':
+          description: Health check passed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/teacher/ready:
+    get:
+      tags:
+        - Service
+      summary: Readiness check
+      description: Verifies database connectivity and readiness.
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '500':
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/teacher/faculty/search:
+    get:
+      tags:
+        - Faculty
+      summary: Search faculty
+      description: Search faculty members by name, employee_id, email, or phone.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+          description: Search term (name, employee ID, email, etc.)
+          example: Rahul
+      responses:
+        '200':
+          description: Faculty search results returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Search query parameter q is missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/faculty/stats:
+    get:
+      tags:
+        - Faculty
+      summary: Get faculty statistics
+      description: Returns overall faculty statistics (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Faculty stats returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin access required
+
+  /api/teacher/dashboard/teacher:
+    get:
+      tags:
+        - Teacher Dashboard
+      summary: Get teacher dashboard data
+      description: Returns comprehensive metrics, schedules, assignments, and summary for the authenticated teacher.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/teacher/faculty/me/profile:
+    get:
+      tags:
+        - Faculty
+      summary: Get authenticated teacher profile page
+      description: Returns profile details, assigned subjects, and academic performance data for the authenticated teacher.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: integer
+          description: Optional academic year filter
+          example: 2026
+      responses:
+        '200':
+          description: Profile returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/teacher/faculty/by-department/{departmentId}:
+    get:
+      tags:
+        - Faculty
+      summary: Get faculty by department ID
+      description: Returns all faculty members in the specified department.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: departmentId
+          required: true
+          schema:
+            type: integer
+          description: Unique department ID
+          example: 1
+      responses:
+        '200':
+          description: Faculty returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/faculty/by-employee-id/{employeeId}:
+    get:
+      tags:
+        - Faculty
+      summary: Get faculty by employee ID
+      description: Returns faculty profile by employee code (e.g. EMP-0001).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: employeeId
+          required: true
+          schema:
+            type: string
+          description: Employee ID code
+          example: EMP-0001
+      responses:
+        '200':
+          description: Faculty returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Faculty not found
+
+  /api/teacher/faculty/user/{id}:
+    get:
+      tags:
+        - Faculty
+      summary: Get faculty by user ID
+      description: Returns faculty record associated with a specific user ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: User ID
+          example: 1
+      responses:
+        '200':
+          description: Faculty returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Faculty not found
+
+  /api/teacher/faculty:
+    post:
+      tags:
+        - Faculty
+      summary: Create a faculty member
+      description: Creates a new faculty record, auto-generates employee ID, and provisions user credentials (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacultyCreateRequest'
+      responses:
+        '201':
+          description: Faculty created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing required fields
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Faculty with employee ID already exists
+    get:
+      tags:
+        - Faculty
+      summary: Get all faculty
+      description: List faculty members with optional filtering by department, designation, or HOD status.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: department_id
+          required: false
+          schema:
+            type: integer
+          description: Filter by department ID
+          example: 1
+        - in: query
+          name: designation
+          required: false
+          schema:
+            type: string
+          description: Filter by designation
+          example: Assistant Professor
+        - in: query
+          name: is_hod
+          required: false
+          schema:
+            type: boolean
+          description: Filter by HOD status
+          example: false
+      responses:
+        '200':
+          description: Faculty returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/faculty/{id}:
+    get:
+      tags:
+        - Faculty
+      summary: Get faculty by ID
+      description: Returns faculty record details for a specific faculty ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Faculty ID
+          example: 1
+      responses:
+        '200':
+          description: Faculty returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Faculty not found
+    put:
+      tags:
+        - Faculty
+      summary: Update faculty by ID
+      description: Updates faculty record details (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Faculty ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacultyUpdateRequest'
+      responses:
+        '200':
+          description: Faculty updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Faculty not found
+    delete:
+      tags:
+        - Faculty
+      summary: Delete faculty by ID
+      description: Soft-deletes / deletes faculty record by ID (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Faculty ID
+          example: 1
+      responses:
+        '200':
+          description: Faculty deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Faculty not found
+
+  /api/teacher/assignments:
+    post:
+      tags:
+        - Assignments
+      summary: Create an assignment with optional file uploads
+      description: Create a new assignment or homework. Supports both JSON body and multipart/form-data with attached files.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - title
+                - type
+                - subject_id
+                - due_date
+                - due_time
+              properties:
+                title:
+                  type: string
+                  example: Data Structures Assignment 1
+                description:
+                  type: string
+                  example: Implement AVL Trees and Benchmarks
+                detailed_instructions:
+                  type: string
+                  example: Submit code and PDF report
+                type:
+                  type: string
+                  enum: [Assignment, Homework]
+                  example: Assignment
+                subject_id:
+                  type: integer
+                  example: 1
+                program_id:
+                  type: integer
+                  example: 1
+                semester_id:
+                  type: integer
+                  example: 1
+                class_id:
+                  type: integer
+                  example: 1
+                academic_year_id:
+                  type: integer
+                  example: 1
+                due_date:
+                  type: string
+                  format: date
+                  example: "2026-09-30"
+                due_time:
+                  type: string
+                  example: "23:59:00"
+                maximum_marks:
+                  type: integer
+                  default: 100
+                  example: 100
+                allow_late_submissions:
+                  type: boolean
+                  default: false
+                  example: false
+                send_notification:
+                  type: boolean
+                  default: true
+                  example: true
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Optional file attachments (PDF, DOCX, etc.)
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssignmentRequest'
+      responses:
+        '201':
+          description: Assignment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing required fields
+        '401':
+          description: Unauthorized
+    get:
+      tags:
+        - Assignments
+      summary: Get assignments for authenticated faculty member
+      description: Returns assignments created by or assigned to the logged-in teacher with filtering and pagination.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+            enum: [Assignment, Homework]
+          description: Filter by type
+          example: Assignment
+        - in: query
+          name: subject_id
+          required: false
+          schema:
+            type: integer
+          description: Filter by subject ID
+          example: 1
+        - in: query
+          name: program_id
+          required: false
+          schema:
+            type: integer
+          description: Filter by program ID
+          example: 1
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive, all]
+            default: active
+          description: Filter by status
+          example: active
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+          example: 1
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Items per page
+          example: 10
+      responses:
+        '200':
+          description: Assignments returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/assignments/submitted:
+    get:
+      tags:
+        - Submissions
+      summary: Get submitted assignments for the authenticated teacher
+      description: List student submissions for assignments with search and filter capabilities (Requires teacher role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: teacherId
+          required: false
+          schema:
+            type: integer
+          description: Optional teacher ID override (defaults to authenticated teacher)
+          example: 1
+        - in: query
+          name: department_id
+          required: false
+          schema:
+            type: string
+          description: Filter by department ID or stream
+          example: "1"
+        - in: query
+          name: program_id
+          required: false
+          schema:
+            type: string
+          description: Filter by program ID
+          example: "1"
+        - in: query
+          name: class_id
+          required: false
+          schema:
+            type: string
+          description: Filter by class ID
+          example: "1"
+        - in: query
+          name: roll_number
+          required: false
+          schema:
+            type: string
+          description: Filter by student roll number (also accepts roll_no or rollNo)
+          example: "CS2026001"
+        - in: query
+          name: student_id
+          required: false
+          schema:
+            type: string
+          description: Filter by student ID (also accepts studentId)
+          example: "1"
+        - in: query
+          name: student_name
+          required: false
+          schema:
+            type: string
+          description: Filter by student name (also accepts studentName)
+          example: "John"
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+          example: 1
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+          description: Items per page
+          example: 10
+      responses:
+        '200':
+          description: Submitted assignments returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Teacher role required
+
+  /api/teacher/faculty/{facultyId}/assignments:
+    get:
+      tags:
+        - Assignments
+      summary: Get assignments for a specific faculty member
+      description: Returns assignments list for specified faculty member (backward compatibility).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: facultyId
+          required: true
+          schema:
+            type: integer
+          description: Faculty ID
+          example: 1
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+            enum: [Assignment, Homework]
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [active, inactive, all]
+            default: active
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Assignments returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/faculty/{id}/assignments:
+    post:
+      tags:
+        - Assignments
+      summary: Create a legacy faculty class/subject assignment
+      description: Assign a faculty member to a class/subject/program (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Faculty ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentLegacyRequest'
+      responses:
+        '201':
+          description: Faculty assignment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    get:
+      tags:
+        - Assignments
+      summary: Get assignments for faculty ID (legacy endpoint)
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Faculty ID
+          example: 1
+      responses:
+        '200':
+          description: Assignments returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/faculty-assignments/{assignmentId}:
+    delete:
+      tags:
+        - Assignments
+      summary: Delete a legacy faculty assignment
+      description: Removes a faculty class/subject assignment record (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Faculty class assignment ID
+          example: 1
+      responses:
+        '200':
+          description: Faculty assignment deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Assignment not found
+
+  /api/teacher/assignments/{assignmentId}:
+    get:
+      tags:
+        - Assignments
+      summary: Get assignment details by ID
+      description: Returns full details and attachments for the requested assignment ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+      responses:
+        '200':
+          description: Assignment details returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid assignment ID
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+    put:
+      tags:
+        - Assignments
+      summary: Update assignment by ID
+      description: Updates assignment information and allows uploading additional files.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: Data Structures Assignment 1 - Updated
+                description:
+                  type: string
+                  example: Updated instructions
+                detailed_instructions:
+                  type: string
+                  example: Detailed notes
+                due_date:
+                  type: string
+                  format: date
+                  example: "2026-10-05"
+                due_time:
+                  type: string
+                  example: "23:59:00"
+                maximum_marks:
+                  type: integer
+                  example: 100
+                allow_late_submissions:
+                  type: boolean
+                  example: true
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssignmentRequest'
+      responses:
+        '200':
+          description: Assignment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+    delete:
+      tags:
+        - Assignments
+      summary: Delete assignment by ID
+      description: Deletes assignment by ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+      responses:
+        '200':
+          description: Assignment deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+
+  /api/teacher/assignments/{assignmentId}/files:
+    post:
+      tags:
+        - Assignments
+      summary: Upload files for an assignment
+      description: Uploads additional attachment files to an existing assignment.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - files
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Files to attach
+      responses:
+        '200':
+          description: Files uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: No files provided or invalid parameters
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+
+  /api/teacher/assignments/{assignmentId}/attachments:
+    get:
+      tags:
+        - Assignments
+      summary: Get attachments for an assignment
+      description: Lists all attached files for a given assignment ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+      responses:
+        '200':
+          description: Attachments returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+
+  /api/teacher/assignments/{assignmentId}/files/{filename}:
+    get:
+      tags:
+        - Assignments
+      summary: Serve an assignment attachment file
+      description: Public direct file download/view endpoint for an assignment file.
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+        - in: path
+          name: filename
+          required: true
+          schema:
+            type: string
+          description: File name on the server
+          example: "assignment-doc-1.pdf"
+      responses:
+        '200':
+          description: File returned as octet-stream / PDF / image
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid parameters
+        '403':
+          description: File not associated with this assignment
+        '404':
+          description: File not found
+
+  /api/teacher/assignments/{assignmentId}/attachments/{attachmentId}:
+    delete:
+      tags:
+        - Assignments
+      summary: Delete an assignment attachment
+      description: Removes a specific attachment from an assignment.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+        - in: path
+          name: attachmentId
+          required: true
+          schema:
+            type: integer
+          description: Attachment ID
+          example: 1
+      responses:
+        '200':
+          description: Attachment deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Attachment or assignment not found
+
+  /api/teacher/submissions/{submissionId}:
+    get:
+      tags:
+        - Submissions
+      summary: Get submitted assignment details by submission ID
+      description: Returns student submission details for teacher grading (Requires teacher role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: integer
+          description: Submission ID
+          example: 1
+      responses:
+        '200':
+          description: Submission details returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Submission ID required
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Teacher role required
+        '404':
+          description: Submission not found
+
+  /api/teacher/submissions/{submissionId}/grade:
+    put:
+      tags:
+        - Submissions
+      summary: Grade a submitted assignment
+      description: Grades a student assignment submission with marks and feedback (Requires teacher role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: integer
+          description: Submission ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GradeSubmissionRequest'
+      responses:
+        '200':
+          description: Submission graded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing marks_obtained
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Submission not found
+
+  /api/teacher/metadata/semesters:
+    get:
+      tags:
+        - Metadata
+      summary: Get semesters
+      description: Returns distinct semesters assigned to the authenticated teacher.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: classId
+          required: false
+          schema:
+            type: integer
+          description: Optional class ID to filter semesters
+          example: 1
+      responses:
+        '200':
+          description: Semesters returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/metadata/programs:
+    get:
+      tags:
+        - Metadata
+      summary: Get programs
+      description: Returns distinct programs assigned to the authenticated teacher.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Programs returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/metadata/departments:
+    get:
+      tags:
+        - Metadata
+      summary: Get departments
+      description: Returns distinct departments associated with the authenticated teacher's classes.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Departments returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/metadata/subjects:
+    get:
+      tags:
+        - Metadata
+      summary: Get subjects
+      description: Returns distinct subjects assigned to the authenticated teacher.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: programId
+          required: false
+          schema:
+            type: integer
+          description: Optional program ID filter
+          example: 1
+        - in: query
+          name: classId
+          required: false
+          schema:
+            type: integer
+          description: Optional class ID filter
+          example: 1
+      responses:
+        '200':
+          description: Subjects returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/metadata/academic-years:
+    get:
+      tags:
+        - Metadata
+      summary: Get academic years
+      description: Returns distinct academic years assigned to the authenticated teacher.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Academic years returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/metadata/classes:
+    get:
+      tags:
+        - Metadata
+      summary: Get classes
+      description: Returns distinct classes assigned to the authenticated teacher.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: programId
+          required: false
+          schema:
+            type: integer
+          description: Optional program ID filter
+          example: 1
+      responses:
+        '200':
+          description: Classes returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/teacher/staff-attendance/overview:
+    get:
+      tags:
+        - Staff Attendance
+      summary: Get staff attendance overview
+      description: Returns aggregate attendance statistics (present, absent, late, leave counts and percentages) for pie/donut chart widgets.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: facultyId
+          required: false
+          schema:
+            type: integer
+          description: Optional faculty ID filter
+          example: 1
+      responses:
+        '200':
+          description: Staff attendance overview returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/teacher/staff-attendance/stats:
+    get:
+      tags:
+        - Staff Attendance
+      summary: Get staff attendance statistics
+      description: Returns daily counts of staff by status (present, absent, late, on leave, etc.) for dashboard widgets (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Target date (defaults to today)
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Attendance stats returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin access required
+
+  /api/teacher/staff-attendance/summary:
+    get:
+      tags:
+        - Staff Attendance
+      summary: Get staff attendance summary
+      description: Returns aggregated attendance metrics across a date range and optional department (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: startDate
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Start date (YYYY-MM-DD)
+          example: "2026-08-01"
+        - in: query
+          name: endDate
+          required: false
+          schema:
+            type: string
+            format: date
+          description: End date (YYYY-MM-DD)
+          example: "2026-08-31"
+        - in: query
+          name: department_id
+          required: false
+          schema:
+            type: integer
+          description: Filter by department ID
+          example: 1
+      responses:
+        '200':
+          description: Attendance summary returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin access required
+
+  /api/teacher/staff-attendance/report:
+    get:
+      tags:
+        - Staff Attendance
+      summary: Get staff attendance report
+      description: Generates detailed attendance report data in JSON format or formatted HTML for PDF generation (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Single date filter (YYYY-MM-DD)
+          example: "2026-08-22"
+        - in: query
+          name: month
+          required: false
+          schema:
+            type: string
+          description: Month number (01 to 12)
+          example: "08"
+        - in: query
+          name: year
+          required: false
+          schema:
+            type: string
+          description: Year (YYYY)
+          example: "2026"
+        - in: query
+          name: department_id
+          required: false
+          schema:
+            type: integer
+          description: Optional department ID
+          example: 1
+        - in: query
+          name: format
+          required: false
+          schema:
+            type: string
+            enum: [json, html]
+            default: json
+          description: Response format (json or printable html)
+          example: json
+      responses:
+        '200':
+          description: Attendance report returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+            text/html:
+              schema:
+                type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin access required
+
+  /api/teacher/staff-attendance/employee/{employeeId}:
+    get:
+      tags:
+        - Staff Attendance
+      summary: Get attendance for a specific employee
+      description: Returns attendance history for a single staff employee (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: employeeId
+          required: true
+          schema:
+            type: string
+          description: Employee ID code
+          example: EMP-0001
+        - in: query
+          name: startDate
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter start date
+          example: "2026-08-01"
+        - in: query
+          name: endDate
+          required: false
+          schema:
+            type: string
+            format: date
+          description: Filter end date
+          example: "2026-08-31"
+      responses:
+        '200':
+          description: Employee attendance returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Employee ID required
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin access required
+        '404':
+          description: Employee not found
+
+  /api/teacher/staff-attendance:
+    post:
+      tags:
+        - Staff Attendance
+      summary: Mark attendance for a single staff member
+      description: Records daily attendance for an individual staff member (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffAttendanceRequest'
+      responses:
+        '201':
+          description: Staff attendance marked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing employee_id, attendance_date, or attendance_status
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin access required
+
+  /api/teacher/staff-attendance/bulk:
+    post:
+      tags:
+        - Staff Attendance
+      summary: Bulk mark attendance for multiple staff members
+      description: Records or updates attendance for an entire roster of staff for a given date (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkStaffAttendanceRequest'
+      responses:
+        '200':
+          description: Bulk attendance processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - date and staff array are required
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin access required
+
+  /api/teacher/staff-attendance/{attendanceId}:
+    delete:
+      tags:
+        - Staff Attendance
+      summary: Delete a staff attendance record
+      description: Removes an attendance entry by attendance ID (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: attendanceId
+          required: true
+          schema:
+            type: string
+          description: Attendance record ID or UUID
+          example: "ATT-20260822-001"
+      responses:
+        '200':
+          description: Attendance record deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Attendance ID is required
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin access required
+        '404':
+          description: Attendance record not found

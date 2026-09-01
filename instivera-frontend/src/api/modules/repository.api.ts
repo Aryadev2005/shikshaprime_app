@@ -1,13 +1,13 @@
-import Constants from 'expo-constants';
 import { apiClient } from '../client';
 import { ApiResponse } from '../../types/api';
 import { RepositoryCategory, RepositoryFile } from '../../types/repository';
 import { useAuthStore } from '../../store/authStore';
+import { API_URL } from '../../config/env';
 
 const client = apiClient.getClient();
-const BASE_URL: string =
-  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
-  'http://localhost:4000/api/mobile';
+// Shared resolver — see src/config/env.ts. The old `localhost` fallback made
+// download links unreachable from a physical device.
+const BASE_URL: string = API_URL;
 
 export const repositoryApi = {
   async getCategories(): Promise<RepositoryCategory[]> {

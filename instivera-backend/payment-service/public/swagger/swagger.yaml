@@ -1,0 +1,1207 @@
+openapi: 3.0.0
+info:
+  title: Payment Service API
+  description: Comprehensive API documentation for Fee Management and Payment Service in ShikshaPrime College Management System, supporting fee type configurations, bulk student fee assignments, dashboard reporting, online gateway integrations (PhonePe & Razorpay), public standalone student fee lookup, and webhook processing.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health, readiness, and metadata endpoints
+  - name: Dashboard
+    description: Fee collection overview statistics, defaulters list, and class-wise summaries
+  - name: Payment Types
+    description: Fee category and head definitions, default amounts, and ledger mappings
+  - name: Student Payments
+    description: Student fee assignments, payment tracking, recording manual payments, and gateway processing
+  - name: Public Payments
+    description: Standalone student fee lookup, public online payment initiation, and payment reconciliation
+  - name: Webhooks
+    description: Server-to-server gateway webhook endpoints (PhonePe)
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: An error occurred while processing the request
+        data:
+          type: object
+          nullable: true
+      additionalProperties: true
+
+    PaymentTypeRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Tuition Fee 2026-27"
+        fee_head_id:
+          type: integer
+          nullable: true
+          example: 1
+        description:
+          type: string
+          nullable: true
+          example: "Semester 1 tuition fee for undergraduate students"
+        amount:
+          type: number
+          nullable: true
+          example: 25000.00
+        ledger:
+          type: integer
+          nullable: true
+          description: Accounting Ledger ID to map for general ledger integration
+          example: 101
+        is_active:
+          type: boolean
+          default: true
+          example: true
+
+    StudentPaymentAssignRequest:
+      type: object
+      required:
+        - payment_type_id
+        - amount
+        - due_date
+        - student_ids
+      properties:
+        student_ids:
+          type: array
+          items:
+            type: integer
+          description: Array of student database IDs to assign this fee to
+          example: [1, 2, 3]
+        payment_type_id:
+          type: integer
+          description: Payment type ID
+          example: 1
+        fee_head_id:
+          type: integer
+          nullable: true
+          example: 1
+        academic_year_id:
+          type: integer
+          nullable: true
+          description: Academic year ID (defaults to active academic year if omitted)
+          example: 1
+        amount:
+          type: number
+          example: 25000.00
+        due_date:
+          type: string
+          format: date
+          example: "2026-09-30"
+        status:
+          type: string
+          enum: [pending, paid, partial, overdue]
+          default: pending
+          example: pending
+
+    RecordPaymentRequest:
+      type: object
+      required:
+        - amount_paid
+        - payment_method
+      properties:
+        amount_paid:
+          type: number
+          description: Amount collected in this payment entry
+          example: 25000.00
+        payment_method:
+          type: string
+          enum: [cash, cheque, dd, upi, card, netbanking, bank_transfer]
+          example: upi
+        transaction_ref:
+          type: string
+          nullable: true
+          description: Cheque number, DD number, or Bank Transaction Reference ID
+          example: "UPI/234902834092"
+        notes:
+          type: string
+          nullable: true
+          example: "Paid at campus fee counter"
+        created_by:
+          type: string
+          nullable: true
+          example: "admin_clerk"
+
+    PaymentStatusUpdateRequest:
+      type: object
+      required:
+        - newStatus
+      properties:
+        newStatus:
+          type: string
+          enum: [pending, paid, partial, overdue]
+          example: paid
+        merchantOrderId:
+          type: string
+          nullable: true
+          example: "SP-1-1724350000000"
+        amount:
+          type: number
+          nullable: true
+          example: 25000.00
+
+    StudentGatewayInitiateRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+          nullable: true
+          description: Custom payable amount (defaults to remaining balance if omitted)
+          example: 25000.00
+        route:
+          type: string
+          nullable: true
+          description: Return routing identifier for frontend redirect
+          example: "student_dashboard"
+        provider:
+          type: string
+          enum: [phonepe, razorpay]
+          default: phonepe
+          example: phonepe
+
+    StudentGatewayVerifyRequest:
+      type: object
+      required:
+        - merchantOrderId
+        - razorpay_order_id
+        - razorpay_payment_id
+        - razorpay_signature
+      properties:
+        merchantOrderId:
+          type: string
+          example: "SP-1-1724350000000"
+        razorpay_order_id:
+          type: string
+          example: "order_K8d7v9d7fs"
+        razorpay_payment_id:
+          type: string
+          example: "pay_K8d8g7df8g"
+        razorpay_signature:
+          type: string
+          example: "9a8b7c6d5e4f3a2b1c0d"
+
+    PublicPaymentInitiateRequest:
+      type: object
+      required:
+        - paymentId
+      properties:
+        paymentId:
+          type: integer
+          description: Student fee payment record ID
+          example: 1
+        route:
+          type: string
+          nullable: true
+          example: "public_receipt"
+        amount:
+          type: number
+          nullable: true
+          example: 25000.00
+        remarks:
+          type: string
+          nullable: true
+          example: "Fee payment for 1st Year"
+        provider:
+          type: string
+          enum: [phonepe, razorpay]
+          default: phonepe
+          example: phonepe
+
+    PublicPaymentVerifyRequest:
+      type: object
+      required:
+        - paymentId
+        - merchantOrderId
+        - razorpay_order_id
+        - razorpay_payment_id
+        - razorpay_signature
+      properties:
+        paymentId:
+          type: integer
+          example: 1
+        merchantOrderId:
+          type: string
+          example: "SP-1-1724350000000"
+        razorpay_order_id:
+          type: string
+          example: "order_K8d7v9d7fs"
+        razorpay_payment_id:
+          type: string
+          example: "pay_K8d8g7df8g"
+        razorpay_signature:
+          type: string
+          example: "9a8b7c6d5e4f3a2b1c0d"
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /health:
+    get:
+      tags:
+        - Service
+      summary: Health check
+      description: Returns text confirmation that the service is healthy.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Service is healthy
+
+  /api/payment/ready/{tenant}:
+    get:
+      tags:
+        - Service
+      summary: Database readiness breaker check
+      description: Verifies database connectivity and readiness breaker status for the specified tenant.
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema:
+            type: string
+          description: Tenant name (e.g. demo)
+          example: demo
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: READY
+        '500':
+          description: Service is not ready
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: NOT READY
+
+  /api/payment/dashboard/stats:
+    get:
+      tags:
+        - Dashboard
+      summary: Get payment dashboard statistics
+      description: Returns overall financial metrics (total collected, total pending, paid/overdue counts) and breakdown by payment type.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: classId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: programId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: departmentId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: academicYearId
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Dashboard statistics fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/payment/dashboard/defaulters:
+    get:
+      tags:
+        - Dashboard
+      summary: Get fee defaulters list
+      description: Lists students with pending or overdue fee records past their due date.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: classId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: programId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: departmentId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: academicYearId
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Defaulters list fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/payment/dashboard/class-summary:
+    get:
+      tags:
+        - Dashboard
+      summary: Get class-wise payment summary
+      description: Returns student count, collected amounts, and collection percentages grouped by class.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Class-wise summary fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/payment/types:
+    get:
+      tags:
+        - Payment Types
+      summary: Get all payment types
+      description: Lists all configured payment types including general ledger mappings.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Payment types fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+    post:
+      tags:
+        - Payment Types
+      summary: Create a payment type
+      description: Creates a new payment type and optional ledger mapping.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentTypeRequest'
+      responses:
+        '201':
+          description: Payment type created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing name
+        '401':
+          description: Unauthorized
+
+  /api/payment/types/public:
+    get:
+      tags:
+        - Payment Types
+      summary: Get public payment types
+      description: Lists active payment types available for public/standalone student fee payment lookup.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Public payment types fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/payment/types/active:
+    get:
+      tags:
+        - Payment Types
+      summary: Get active payment types
+      description: Returns active payment types ordered by name.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active payment types fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/payment/types/{id}:
+    get:
+      tags:
+        - Payment Types
+      summary: Get payment type by ID
+      description: Returns details of a specific payment type.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Payment type fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Payment type not found
+    put:
+      tags:
+        - Payment Types
+      summary: Update payment type by ID
+      description: Updates payment type details and ledger mapping.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentTypeRequest'
+      responses:
+        '200':
+          description: Payment type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Payment type not found
+    delete:
+      tags:
+        - Payment Types
+      summary: Delete payment type by ID
+      description: Deletes payment type and its ledger mapping.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Payment type deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Payment type not found
+
+  /api/payment/types/{id}/toggle:
+    patch:
+      tags:
+        - Payment Types
+      summary: Toggle payment type status
+      description: Toggles active/inactive status for a payment type.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Payment type status toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Payment type not found
+
+  /api/payment/students/assign:
+    post:
+      tags:
+        - Student Payments
+      summary: Assign payment to students
+      description: Bulk creates student fee assignments and fee payment records, and dispatches email and in-app notifications.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentPaymentAssignRequest'
+      responses:
+        '201':
+          description: Payment assigned to students successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing fields
+        '401':
+          description: Unauthorized
+
+  /api/payment/students:
+    get:
+      tags:
+        - Student Payments
+      summary: Get student payments
+      description: Returns list of student payments with multi-field filtering and search support.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: classId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: programId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: academicYearId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: departmentId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, paid, partial, overdue]
+          example: pending
+        - in: query
+          name: paymentTypeId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: studentId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: studentIdOrName
+          schema:
+            type: string
+          example: "John"
+        - in: query
+          name: studentEmail
+          schema:
+            type: string
+          example: "student@example.com"
+      responses:
+        '200':
+          description: Student payments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/payment/students/reports:
+    get:
+      tags:
+        - Student Payments
+      summary: Get student payments report
+      description: Detailed payments report including student roll numbers, fee heads, and gateway transaction IDs.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: classId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: programId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: academicYearId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: departmentId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: feeHeadId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: status
+          schema:
+            type: string
+          example: "paid"
+        - in: query
+          name: studentIdOrName
+          schema:
+            type: string
+          example: "CS2026"
+      responses:
+        '200':
+          description: Student payments report fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/payment/students/assignments:
+    get:
+      tags:
+        - Student Payments
+      summary: Get student payment fee assignments
+      description: Returns fee assignments records with discounts, fines, and due dates.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: classId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: programId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: academicYearId
+          schema:
+            type: string
+          example: "1"
+        - in: query
+          name: feeHeadId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: status
+          schema:
+            type: string
+          example: "pending"
+      responses:
+        '200':
+          description: Student fee assignments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/payment/students/public-lookup:
+    get:
+      tags:
+        - Public Payments
+      summary: Lookup student fee details for public payment
+      description: Looks up student or pre-registration application fee status by identifier (Student ID or Application ID) and paymentTypeId.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: identifier
+          required: true
+          schema:
+            type: string
+          example: "STU-2026001"
+        - in: query
+          name: lookupType
+          schema:
+            type: string
+            enum: [student_id, registration]
+            default: student_id
+          example: student_id
+        - in: query
+          name: paymentTypeId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Student payment details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: identifier and paymentTypeId are required
+        '404':
+          description: Student or payment type not found
+
+  /api/payment/students/public/initiate:
+    post:
+      tags:
+        - Public Payments
+      summary: Initiate standalone public student payment
+      description: Initiates payment with PhonePe or Razorpay for a public student fee payment and returns gateway checkout URL.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicPaymentInitiateRequest'
+      responses:
+        '200':
+          description: Payment gateway initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Payment already completed or invalid amount
+        '404':
+          description: Payment not found
+
+  /api/payment/students/public/verify:
+    post:
+      tags:
+        - Public Payments
+      summary: Verify public Razorpay payment
+      description: Verifies signature with Razorpay, creates transaction receipt, marks payment as paid, and sends confirmation emails.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublicPaymentVerifyRequest'
+      responses:
+        '200':
+          description: Razorpay payment verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Signature verification failed
+        '404':
+          description: Payment not found
+
+  /api/payment/students/public/callback-status:
+    get:
+      tags:
+        - Public Payments
+      summary: Reconcile public payment callback status
+      description: Reconciles payment status from PhonePe gateway using merchantOrderId.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: merchantOrderId
+          required: true
+          schema:
+            type: string
+          example: "SP-1-1724350000000"
+      responses:
+        '200':
+          description: Payment callback reconciled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: merchantOrderId is required
+        '404':
+          description: Payment not found
+
+  /api/payment/students/{assignmentId}/initiate:
+    post:
+      tags:
+        - Student Payments
+      summary: Initiate gateway payment for student fee assignment
+      description: Initiates PhonePe or Razorpay payment for a logged-in student fee assignment.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentGatewayInitiateRequest'
+      responses:
+        '200':
+          description: Payment gateway initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Not authorized for this student record
+        '404':
+          description: Payment or assignment not found
+
+  /api/payment/students/{assignmentId}/verify:
+    post:
+      tags:
+        - Student Payments
+      summary: Verify gateway payment for student fee assignment
+      description: Verifies Razorpay payment signature for logged-in student payment.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentGatewayVerifyRequest'
+      responses:
+        '200':
+          description: Payment verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Verification failed
+        '401':
+          description: Unauthorized
+        '404':
+          description: Payment not found
+
+  /api/payment/students/{paymentId}/update-status:
+    put:
+      tags:
+        - Student Payments
+      summary: Update payment status after gateway payment
+      description: Updates payment status to paid/partial and logs completion timestamp.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: paymentId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentStatusUpdateRequest'
+      responses:
+        '200':
+          description: Payment status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid status
+        '401':
+          description: Unauthorized
+        '404':
+          description: Payment not found
+
+  /api/payment/students/{paymentId}/status:
+    get:
+      tags:
+        - Student Payments
+      summary: Check payment status with gateway
+      description: Queries gateway status for transaction ID and reconciles database record.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: paymentId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Payment status retrieved and reconciled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Payment not found
+
+  /api/payment/students/{paymentId}:
+    get:
+      tags:
+        - Student Payments
+      summary: Get payment by ID
+      description: Returns payment record with payment type details and transaction receipts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: paymentId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Payment fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Payment not found
+    delete:
+      tags:
+        - Student Payments
+      summary: Delete student payment
+      description: Deletes student payment and all associated transaction records.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: paymentId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Payment deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Payment not found
+
+  /api/payment/students/{paymentId}/pay:
+    post:
+      tags:
+        - Student Payments
+      summary: Record payment / manual receipt collection
+      description: Records manual cash/DD/cheque/bank fee collection, updates paid amount, and issues receipt number.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: paymentId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordPaymentRequest'
+      responses:
+        '200':
+          description: Payment recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid amount or payment method
+        '401':
+          description: Unauthorized
+        '404':
+          description: Payment not found
+
+  /api/payment/webhooks/phonepe:
+    post:
+      tags:
+        - Webhooks
+      summary: PhonePe gateway webhook callback
+      description: Ingests server-to-server asynchronous status callbacks from PhonePe gateway, updates transaction status, and triggers confirmation emails.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - merchantOrderId
+                - state
+              properties:
+                merchantOrderId:
+                  type: string
+                  example: "SP-1-1724350000000"
+                state:
+                  type: string
+                  enum: [COMPLETED, FAILED, PENDING]
+                  example: COMPLETED
+                data:
+                  type: object
+                  properties:
+                    transactionId:
+                      type: string
+                      example: "TXN12345678"
+                    amount:
+                      type: integer
+                      description: Amount in paise
+                      example: 2500000
+                    orderId:
+                      type: string
+                      example: "ORD987654"
+              additionalProperties: true
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing merchantOrderId
+        '404':
+          description: Payment record not found

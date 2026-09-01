@@ -39,9 +39,11 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   }, [tenant, navigation]);
 
-  if (!tenant) return null;
-
+  // NOTE: every hook must run before the `!tenant` early return below,
+  // otherwise the hook count changes between renders and React throws
+  // "Rendered more hooks than during the previous render".
   const handleLogin = useCallback(async () => {
+    if (!tenant) return;
     if (!username || !password) {
       setError('Please enter both username and password');
       return;
@@ -56,6 +58,9 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
       setError(msg);
     }
   }, [username, password, tenant, institutionName, institutionType, login, setSelectedInstitution]);
+
+  // Nothing to render while the redirect above is in flight.
+  if (!tenant) return null;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>

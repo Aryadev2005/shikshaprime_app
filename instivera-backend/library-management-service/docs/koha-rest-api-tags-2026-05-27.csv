@@ -1,0 +1,165 @@
+﻿"name","description"
+"2fa","Handle two factor authentication flows
+"
+"action_logs","Manage action logs
+"
+"additional_contents","Manage additional contents
+"
+"additional_fields","Manage additional fields
+"
+"article_requests","Manage article requests
+"
+"authorised_value_categories","Manage authorised value categories
+"
+"authorised_values","Manage authorised values
+"
+"authorities","Manage Authority records
+"
+"baskets","Manage baskets for the acquisitions module
+"
+"batch_import_profiles","Manage batch import profiles
+"
+"biblios","Manage bibliographic records
+"
+"bookings","Manage bookings
+"
+"cash_registers","Manage cash registers
+"
+"cashups","Manage cash register cashups
+"
+"categories","Manage categories
+"
+"checkouts","Manage checkouts
+"
+"circulation_rules","Manage circulation rules
+"
+"cities","Manage cities
+"
+"clubs","Manage patron clubs
+"
+"csp-reports","Report Content-Security-Policy violations
+"
+"desks","Manage circulation desks
+"
+"edi_files","Manage EDI files
+"
+"erm_agreements","Manage ERM agreements
+"
+"erm_config","Manage ERM configuration
+"
+"erm_counter_files","Manage ERM counter files
+"
+"erm_counter_logs","Manage ERM counter logs
+"
+"erm_counter_registry","Retrieve counter registry data
+"
+"erm_default_usage_reports","Manage ERM saved reports
+"
+"erm_documents","Manage ERM docuemnts
+"
+"erm_eholdings_packages","Manage ERM eHoldings packages
+"
+"erm_eholdings_resources","Manage ERM eHoldings resources
+"
+"erm_eholdings_titles","Manage ERM eHoldings titles
+"
+"erm_licences","Manage ERM licences
+"
+"erm_sushi_service","Retrieve SUSHI service data
+"
+"erm_usage_data_providers","Manage ERM usage data providers
+"
+"erm_usage_databases","Manage ERM usage databases
+"
+"erm_usage_items","Manage ERM usage items
+"
+"erm_usage_platforms","Manage ERM usage platforms
+"
+"erm_usage_reports","Manage ERM usage reports
+"
+"erm_usage_titles","Manage ERM usage titles
+"
+"erm_users","Manage ERM users
+"
+"file_transports","Manage file transport configurations
+"
+"funds","Manage funds for the acquisitions module
+"
+"hold_groups","Manage hold groups
+"
+"holds","Manage holds
+"
+"identity_providers","Manage identity providers
+"
+"ill_backends","Manage ILL module backends
+"
+"ill_batches","Manage ILL module batches
+"
+"ill_batchstatuses","Manage ILL module batch statuses
+"
+"ill_requests","Manage ILL requests
+"
+"ill_users","Manage ILL users
+"
+"import_batches","Manage import batches
+"
+"iso18626","Manage ISO18626 ILL protocol
+"
+"iso18626_requesting_agencies","Manage ISO18626 requesting agencies
+"
+"iso18626_requests","Manage ISO18626 ILL requests
+"
+"item_groups","Manage item groups
+"
+"item_types","Manage item types
+"
+"items","Manage items
+"
+"jobs","Manage jobs
+"
+"libraries","Manage libraries
+"
+"lists","Manage lists"
+"macros","Manage macros
+"
+"oauth","Handle OAuth flows
+"
+"orders","Manage acquisition orders
+"
+"patron_categories","Manage patron categories
+"
+"patrons","Manage patrons
+"
+"preservation","Manage preservation tasks
+"
+"quotes","Manage quotes
+"
+"recalls","Manage recalls
+"
+"record_sources","Manage record sources
+"
+"return_claims","Manage return claims
+"
+"search_filters","Manage search filters"
+"search_mappings","Manage search field mappings"
+"sip2_accounts","Manage SIP2 accounts"
+"sip2_institutions","Manage SIP2 institutions"
+"sip2_system_preference_overrides","Manage SIP2 system preference overrides"
+"smtp_servers","Manage SMTP servers configurations
+"
+"status","System status
+"
+"stockrotation","Manage stock rotation
+"
+"suggestions","Manage purchase suggestions
+"
+"sysprefs","Manage system preferences
+"
+"tickets","Manage tickets
+"
+"transfer_limits","Manage transfer limits
+"
+"vendors","Manage vendors for the acquisitions module
+"
+"vendors_config","Manage vendors configuration
+"

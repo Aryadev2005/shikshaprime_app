@@ -1,0 +1,65 @@
+openapi: 3.0.0
+info:
+  title: Compliance Management Service API
+  description: Compliance, Regulatory Auditing & Institutional Governance API for ShikshaPrime College Management System.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        message:
+          type: string
+          example: "Compliance management Service is running"
+        data:
+          type: object
+          properties:
+            service:
+              type: string
+              example: "compliance-service"
+            version:
+              type: string
+              example: "1.0.0"
+            port:
+              type: integer
+              example: 5013
+      additionalProperties: true
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Compliance management service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

@@ -36,13 +36,16 @@ export const OtpScreen: React.FC<OtpScreenProps> = ({ route, navigation }) => {
     }
   }, [tenant, navigation]);
 
-  if (!tenant) return null;
-
+  // NOTE: this countdown hook must run unconditionally — placing it after an
+  // early return changes the hook count between renders and crashes React.
   useEffect(() => {
     if (timeLeft === 0) return;
     const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
     return () => clearTimeout(timer);
   }, [timeLeft]);
+
+  // Nothing to render while the redirect above is in flight.
+  if (!tenant) return null;
 
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;

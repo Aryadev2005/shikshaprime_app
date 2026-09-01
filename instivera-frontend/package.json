@@ -11,19 +11,20 @@
     "@react-navigation/stack": "^7.9.3",
     "@tanstack/react-query": "^5.101.0",
     "axios": "^1.17.0",
-    "expo": "~56.0.8",
+    "expo": "~56.0.20",
+    "expo-build-properties": "^57.0.12",
     "expo-constants": "^56.0.16",
-    "expo-dev-client": "~56.0.18",
+    "expo-dev-client": "~56.0.25",
     "expo-document-picker": "^56.0.4",
     "expo-linear-gradient": "~56.0.4",
     "expo-secure-store": "^56.0.4",
     "expo-status-bar": "~56.0.4",
-    "expo-web-browser": "^56.0.5",
+    "expo-web-browser": "~56.0.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.85.3",
-    "react-native-safe-area-context": "^5.8.0",
-    "react-native-screens": "^4.25.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2",
     "socket.io-client": "^4.8.3",
@@ -31,13 +32,18 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "lint": "eslint --ext .ts,.tsx src App.tsx",
+    "typecheck": "tsc --noEmit"
   },
   "private": true
 }

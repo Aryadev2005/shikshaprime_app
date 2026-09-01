@@ -18,7 +18,7 @@ import { Avatar } from '../../components/ui';
 import { useMessages, useSendMessage } from '../../hooks/useChat';
 import { Message } from '../../types/chat';
 import { useAuthStore } from '../../store/authStore';
-import { getSocket, disconnectSocket } from '../../lib/socket';
+import { getSocket } from '../../lib/socket';
 import { useQueryClient } from '@tanstack/react-query';
 import { ChatStackParamList } from '../../navigation/types';
 
@@ -82,8 +82,8 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
 
   // ─── Socket.io setup ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) return;
-    const socket = getSocket(token);
+    if (!token || !tenant) return;
+    const socket = getSocket(token, tenant);
 
     socket.emit('join_conversation', { conversationId, tenant });
 
@@ -91,21 +91,19 @@ export const ChatRoomScreen: React.FC<Props> = ({ route, navigation }) => {
       queryClient.invalidateQueries({
         queryKey: ['chat', 'messages', conversationId],
       });
+      queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] });
     };
 
     socket.on('new_message', handleNewMessage);
 
+    // Leave this room but keep the shared connection alive — it is an app-wide
+    // singleton, so disconnecting here also killed the conversation list's
+    // live updates and forced a full reconnect on every room change.
     return () => {
       socket.off('new_message', handleNewMessage);
+      socket.emit('leave_conversation', { conversationId, tenant });
     };
   }, [conversationId, token, tenant, queryClient]);
-
-  // Disconnect when unmounting screen
-  useEffect(() => {
-    return () => {
-      disconnectSocket();
-    };
-  }, []);
 
   const handleSend = () => {
     const text = inputText.trim();

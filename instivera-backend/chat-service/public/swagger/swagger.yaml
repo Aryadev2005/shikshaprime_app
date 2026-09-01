@@ -1,0 +1,466 @@
+openapi: 3.0.0
+info:
+  title: Chat & Messaging Service API
+  description: Real-Time Direct Messaging, Class Broadcasts, Conversation Management & Multi-User Notification API for ShikshaPrime College Management System, supporting teacher-to-student, student-to-teacher, staff broadcasts, unread counters, and message read receipts.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata
+  - name: Messages
+    description: Direct 1-to-1 messaging, class-wide broadcasts, and unread counts
+  - name: Conversations
+    description: Conversation threads, paginated message histories, and read receipts
+  - name: Recipients
+    description: Directory lookups for composing messages (class roster, faculty directory)
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "An error occurred while processing the request"
+      additionalProperties: true
+
+    DirectMessageRequest:
+      type: object
+      required:
+        - senderUserId
+        - senderUserType
+        - messageText
+      properties:
+        senderUserId:
+          type: integer
+          minimum: 1
+          example: 10
+        senderUserType:
+          type: string
+          enum: [teacher, student, admin, staff]
+          example: "teacher"
+        recipientUserId:
+          type: integer
+          minimum: 1
+          description: Required when starting a new conversation without conversationId
+          example: 101
+        recipientUserType:
+          type: string
+          enum: [teacher, student, admin, staff]
+          description: Required when starting a new conversation without conversationId
+          example: "student"
+        conversationId:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Existing conversation ID if continuing a thread
+          example: 5
+        messageText:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          example: "Please submit your lab assignment report by Friday."
+        messageType:
+          type: string
+          enum: [text, announcement, important]
+          default: text
+          example: "text"
+
+    ClassBroadcastRequest:
+      type: object
+      required:
+        - senderUserId
+        - senderUserType
+        - programId
+        - departmentId
+        - academicYearId
+        - classId
+        - subject
+        - messageText
+      properties:
+        senderUserId:
+          type: integer
+          minimum: 1
+          example: 10
+        senderUserType:
+          type: string
+          enum: [teacher, admin, staff]
+          example: "teacher"
+        programId:
+          type: string
+          example: "3"
+        departmentId:
+          type: string
+          example: "1"
+        academicYearId:
+          type: string
+          example: "2"
+        classId:
+          type: string
+          example: "10"
+        subject:
+          type: string
+          maxLength: 255
+          example: "Class Rescheduled Announcement"
+        messageText:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          example: "Tomorrow's Data Structures lecture is rescheduled to 2:00 PM in Room 204."
+        messageType:
+          type: string
+          enum: [text, announcement, important]
+          default: announcement
+          example: "announcement"
+
+    MarkAsReadRequest:
+      type: object
+      required:
+        - userId
+        - userType
+      properties:
+        userId:
+          type: integer
+          minimum: 1
+          example: 101
+        userType:
+          type: string
+          enum: [teacher, student, admin, staff]
+          example: "student"
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running endpoints.
+      responses:
+        '200':
+          description: Service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /health:
+    get:
+      tags:
+        - Service
+      summary: Service health check
+      description: Returns service health status and timestamp.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/chat/health:
+    get:
+      tags:
+        - Service
+      summary: Chat API router health check
+      description: Returns Chat sub-router operational status.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Chat API is operational
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/chat/messages/direct:
+    post:
+      tags:
+        - Messages
+      summary: Send direct 1-to-1 message
+      description: Sends a direct message between students, teachers, admins, or staff members. Creates a new conversation thread if not already existing.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DirectMessageRequest'
+      responses:
+        '201':
+          description: Direct message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Validation failed or missing parameters
+
+  /api/chat/messages/class-broadcast:
+    post:
+      tags:
+        - Messages
+      summary: Send class broadcast message
+      description: Broadcasts an announcement or important alert to all students enrolled in a specific class section.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassBroadcastRequest'
+      responses:
+        '201':
+          description: Class broadcast sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Validation failed or unauthorized role
+
+  /api/chat/messages/unread-count:
+    get:
+      tags:
+        - Messages
+      summary: Get unread message count
+      description: Returns total count of unread incoming messages for a specific user.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 101
+        - in: query
+          name: userType
+          required: true
+          schema:
+            type: string
+            enum: [teacher, student, admin, staff]
+          example: "student"
+      responses:
+        '200':
+          description: Unread message count fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing userId or userType
+
+  /api/chat/conversations:
+    get:
+      tags:
+        - Conversations
+      summary: Get user conversation threads
+      description: Returns paginated list of active conversations with last message preview and unread status.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 101
+        - in: query
+          name: userType
+          required: true
+          schema:
+            type: string
+            enum: [teacher, student, admin, staff]
+          example: "student"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Conversations fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing userId or userType
+
+  /api/chat/conversations/{conversationId}/messages:
+    get:
+      tags:
+        - Conversations
+      summary: Get messages in conversation
+      description: Returns paginated message history for a specific conversation thread.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 5
+        - in: query
+          name: userId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 101
+        - in: query
+          name: userType
+          required: true
+          schema:
+            type: string
+            enum: [teacher, student, admin, staff]
+          example: "student"
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+          example: 50
+      responses:
+        '200':
+          description: Conversation messages fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing conversationId, userId, or userType
+
+  /api/chat/conversations/{conversationId}/read:
+    put:
+      tags:
+        - Conversations
+      summary: Mark conversation as read
+      description: Clears unread message status and updates read receipt timestamps for the user in the conversation.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: conversationId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkAsReadRequest'
+      responses:
+        '200':
+          description: Conversation marked as read successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing conversationId, userId, or userType
+
+  /api/chat/students/class/{classId}:
+    get:
+      tags:
+        - Recipients
+      summary: Get student recipients by class
+      description: Returns list of active students in a class for recipient selection and broadcast composition.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: classId
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 10
+      responses:
+        '200':
+          description: Students fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing or invalid classId
+
+  /api/chat/teachers:
+    get:
+      tags:
+        - Recipients
+      summary: Get teacher recipients
+      description: Returns list of available faculty members for composing direct messages.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: excludeUserId
+          schema:
+            type: integer
+          example: 10
+      responses:
+        '200':
+          description: Teachers fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

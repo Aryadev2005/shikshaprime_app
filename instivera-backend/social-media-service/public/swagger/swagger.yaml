@@ -1,0 +1,853 @@
+openapi: 3.0.0
+info:
+  title: Social Media Service API
+  description: Comprehensive API documentation for Social Media Management Service in ShikshaPrime College Management System, supporting Facebook and Instagram multi-account publishing, analytics syncing, media asset storage, and webhook subscriptions.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata endpoints
+  - name: Social Accounts
+    description: Connect, verify, list, update, and manage Facebook Pages and Instagram Business accounts
+  - name: Social Posts
+    description: Create, schedule, publish, update, retry, delete, and import social media posts
+  - name: Social Analytics
+    description: Metrics aggregation, engagement totals (likes, comments, shares, impressions), and live Meta Graph API sync
+  - name: Media Library
+    description: Asset library for images and videos used in social media publishing
+  - name: Webhooks
+    description: Meta Graph API Webhook challenge verification and real-time event ingestion
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: An error occurred while processing the request
+        data:
+          type: object
+          nullable: true
+      additionalProperties: true
+
+    FetchPagesRequest:
+      type: object
+      required:
+        - access_token
+      properties:
+        access_token:
+          type: string
+          description: User Access Token from Facebook Login with permissions (pages_show_list, pages_read_engagement, pages_manage_posts, instagram_basic, instagram_content_publish)
+          example: "EAAB..."
+
+    SocialAccountCreateRequest:
+      type: object
+      required:
+        - platform
+        - account_name
+        - account_id
+        - access_token
+      properties:
+        platform:
+          type: string
+          enum: [facebook, instagram, twitter, linkedin]
+          example: facebook
+        account_name:
+          type: string
+          example: "ShikshaPrime College Official"
+        account_id:
+          type: string
+          description: Facebook Page ID or Instagram Business Account ID
+          example: "109827364512345"
+        access_token:
+          type: string
+          description: Long-lived Page Access Token or Instagram Access Token
+          example: "EAAB..."
+        refresh_token:
+          type: string
+          nullable: true
+          example: null
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-12-31T23:59:59Z"
+        is_active:
+          type: boolean
+          default: true
+          example: true
+
+    SocialAccountUpdateRequest:
+      type: object
+      properties:
+        platform:
+          type: string
+          enum: [facebook, instagram, twitter, linkedin]
+          example: facebook
+        account_name:
+          type: string
+          example: "ShikshaPrime College Official (Updated)"
+        account_id:
+          type: string
+          example: "109827364512345"
+        access_token:
+          type: string
+          example: "EAAB..."
+        refresh_token:
+          type: string
+          nullable: true
+          example: null
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-12-31T23:59:59Z"
+        is_active:
+          type: boolean
+          example: true
+
+    SocialPostCreateRequest:
+      type: object
+      required:
+        - account_ids
+      properties:
+        title:
+          type: string
+          example: "Admissions Open 2026-27"
+        content:
+          type: string
+          example: "Excited to announce admissions are now open for the 2026-27 academic batch! Apply today at https://college.edu"
+        status:
+          type: string
+          enum: [draft, scheduled, published]
+          default: draft
+          example: published
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-08-25T10:00:00Z"
+        account_ids:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["admissions", "education", "college"]
+        media_url:
+          type: string
+          nullable: true
+          description: Public or relative URL to the media asset (if not uploading a file via multipart form)
+          example: "/uploads/files/admissions-banner.png"
+
+    SocialPostUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Admissions Open 2026-27 (Updated)"
+        content:
+          type: string
+          example: "Updated post content with application deadlines."
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-08-26T10:00:00Z"
+
+    HistoricalSyncRequest:
+      type: object
+      properties:
+        accountId:
+          type: integer
+          nullable: true
+          description: Optional specific social account ID to import historical posts from. If omitted, imports from all active accounts.
+          example: 1
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status and health
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/socialmedia/accounts/fetch-pages:
+    post:
+      tags:
+        - Social Accounts
+      summary: Fetch Facebook Pages & connected Instagram accounts
+      description: Queries Meta Graph API using a User Access Token to discover all managed Facebook Pages and linked Instagram Business accounts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FetchPagesRequest'
+      responses:
+        '200':
+          description: Available pages and Instagram accounts fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing or invalid access token
+        '500':
+          description: Meta Graph API error or internal server error
+
+  /api/socialmedia/accounts:
+    post:
+      tags:
+        - Social Accounts
+      summary: Connect and create a social account
+      description: Stores Facebook or Instagram account credentials and validates token status.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SocialAccountCreateRequest'
+      responses:
+        '201':
+          description: Social account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing required fields or tenant
+        '500':
+          description: Internal server error
+    get:
+      tags:
+        - Social Accounts
+      summary: List all connected social accounts
+      description: Returns list of all connected social accounts (Facebook, Instagram, etc.) ordered by newest first.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Social accounts fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Tenant missing
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/accounts/{id}:
+    put:
+      tags:
+        - Social Accounts
+      summary: Update a connected social account
+      description: Updates credentials, name, active status, or expiration for a social account.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Social account ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SocialAccountUpdateRequest'
+      responses:
+        '200':
+          description: Social account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Account not found
+        '500':
+          description: Internal server error
+    delete:
+      tags:
+        - Social Accounts
+      summary: Delete a social account
+      description: Removes the connected account configuration from the tenant database.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Social account ID
+          example: 1
+      responses:
+        '200':
+          description: Account deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Account not found
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/accounts/{id}/verify:
+    post:
+      tags:
+        - Social Accounts
+      summary: Verify account connection with Meta Graph API
+      description: Tests token validity against Meta Graph API (`/me` for Facebook, `/{account_id}` for Instagram) and updates the account's active status.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Social account ID
+          example: 1
+      responses:
+        '200':
+          description: Account verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Token invalid or expired
+        '404':
+          description: Account not found
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/posts:
+    get:
+      tags:
+        - Social Posts
+      summary: List all social posts
+      description: Returns paginated list of social posts with their connected accounts, publish statuses, and platform information.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+          example: 10
+      responses:
+        '200':
+          description: Posts fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Tenant missing
+        '500':
+          description: Internal server error
+    post:
+      tags:
+        - Social Posts
+      summary: Create, schedule, or immediately publish a social post
+      description: Creates a new post record, processes hashtags and media files, and immediately publishes or schedules to selected Facebook and Instagram accounts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - account_ids
+              properties:
+                media:
+                  type: string
+                  format: binary
+                  description: Optional image or video file attachment (JPG, PNG, WebP, MP4)
+                title:
+                  type: string
+                  example: "Campus Placement Drive 2026"
+                content:
+                  type: string
+                  example: "Top tier tech companies visiting our campus next week!"
+                status:
+                  type: string
+                  enum: [draft, scheduled, published]
+                  example: published
+                scheduled_at:
+                  type: string
+                  format: date-time
+                  example: "2026-08-25T10:00:00Z"
+                account_ids:
+                  type: string
+                  description: JSON array string of social account IDs (e.g. "[1, 2]")
+                  example: "[1, 2]"
+                tags:
+                  type: string
+                  description: JSON array string of hashtags (e.g. "[\"placements\", \"jobs\"]")
+                  example: "[\"placements\", \"jobs\"]"
+                media_url:
+                  type: string
+                  description: Optional existing media URL if file is not directly uploaded
+                  example: "/uploads/files/banner.png"
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SocialPostCreateRequest'
+      responses:
+        '201':
+          description: Post created and processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Validation error or Instagram missing media error
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/posts/{id}:
+    put:
+      tags:
+        - Social Posts
+      summary: Update a social post
+      description: Updates post title, content, or schedule. If the post was already published to Facebook, syncs the updated message to Facebook Graph API.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Social post ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                media:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                  example: "Campus Placement Drive 2026 (Updated)"
+                content:
+                  type: string
+                  example: "Updated schedule and company list."
+                scheduled_at:
+                  type: string
+                  format: date-time
+                  example: "2026-08-26T10:00:00Z"
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SocialPostUpdateRequest'
+      responses:
+        '200':
+          description: Post updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Post not found
+        '500':
+          description: Internal server error
+    delete:
+      tags:
+        - Social Posts
+      summary: Delete a social post
+      description: Deletes post and related publish jobs, and attempts deletion on Facebook via Graph API.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Social post ID
+          example: 1
+        - in: query
+          name: accountId
+          required: false
+          schema:
+            type: integer
+          description: Optional social account ID to unlink/delete for this specific post only
+          example: 1
+      responses:
+        '200':
+          description: Post deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Deletion failed on remote platform
+        '404':
+          description: Post not found
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/posts/{id}/retry:
+    post:
+      tags:
+        - Social Posts
+      summary: Retry publishing failed social accounts for a post
+      description: Retries publishing to accounts that failed during the initial publish or scheduled run.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Social post ID
+          example: 1
+      responses:
+        '200':
+          description: Retry process completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: No failed accounts found to retry
+        '404':
+          description: Post not found
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/posts/tags:
+    get:
+      tags:
+        - Social Posts
+      summary: Get all distinct post tags
+      description: Returns alphabetical list of all hashtags used across social posts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tags fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/posts/sync-history:
+    post:
+      tags:
+        - Social Posts
+      summary: Sync historical published posts from Facebook and Instagram
+      description: Imports previously published posts directly from connected Facebook Pages and Instagram accounts into the local database.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoricalSyncRequest'
+      responses:
+        '200':
+          description: Historical posts synced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/analytics:
+    get:
+      tags:
+        - Social Analytics
+      summary: Get social media performance analytics
+      description: Returns aggregated metrics (total likes, comments, shares, impressions) and paginated per-post analytics.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          example: 10
+      responses:
+        '200':
+          description: Analytics fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Tenant missing
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/analytics/sync:
+    post:
+      tags:
+        - Social Analytics
+      summary: Trigger manual live analytics sync from Meta
+      description: Queries Meta Graph API for real-time likes, comments, shares, and impressions for all published posts and stores updated metrics.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Analytics synced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Tenant missing
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/library:
+    get:
+      tags:
+        - Media Library
+      summary: List all media assets
+      description: Returns all uploaded images and video files stored in the media library.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Media library items fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Tenant missing
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/library/upload:
+    post:
+      tags:
+        - Media Library
+      summary: Upload a media asset
+      description: Uploads an image or video file to the persistent uploads directory and creates a media library record.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Media asset file (JPG, PNG, GIF, WebP, MP4, MOV)
+      responses:
+        '201':
+          description: Media uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: No file uploaded or tenant missing
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/library/{id}:
+    delete:
+      tags:
+        - Media Library
+      summary: Delete a media asset
+      description: Deletes the media library database record and removes the physical file from disk.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Media item ID
+          example: 1
+      responses:
+        '200':
+          description: Media deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Media not found
+        '500':
+          description: Internal server error
+
+  /api/socialmedia/webhooks:
+    get:
+      tags:
+        - Webhooks
+      summary: Verify Meta webhook challenge
+      description: Endpoint invoked by Meta to verify webhook callback URL using `hub.challenge` and `hub.verify_token`.
+      parameters:
+        - in: query
+          name: hub.mode
+          required: true
+          schema:
+            type: string
+          example: subscribe
+        - in: query
+          name: hub.verify_token
+          required: true
+          schema:
+            type: string
+          example: shikshaprime_social_secret
+        - in: query
+          name: hub.challenge
+          required: true
+          schema:
+            type: string
+          example: "1158201444"
+      responses:
+        '200':
+          description: Challenge string returned as plain text
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "1158201444"
+        '400':
+          description: Missing query parameters
+        '403':
+          description: Verification token mismatch
+    post:
+      tags:
+        - Webhooks
+      summary: Ingest Meta webhook event payload
+      description: Receives real-time notifications for Facebook and Instagram events (feed changes, comments, messages) and logs them into `social_webhooks`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                object:
+                  type: string
+                  example: page
+                entry:
+                  type: array
+                  items:
+                    type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Event received successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: EVENT_RECEIVED
+        '404':
+          description: Unrecognized object type
+        '500':
+          description: Internal server error

@@ -1,0 +1,2631 @@
+openapi: 3.0.0
+info:
+  title: Accreditation Service API
+  description: API documentation for the Accreditation Service.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Uses the same host and port as the running service
+
+tags:
+  - name: Service
+  - name: Institutional Identity
+  - name: Academic
+  - name: Research
+  - name: Student Support
+  - name: Institutional Values
+  - name: Infrastructure
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    GenericResponse:
+      type: object
+      additionalProperties: true
+    MultipartRequest:
+      type: object
+      additionalProperties: true
+    PathId:
+      type: integer
+      minimum: 1
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Get accreditation service status
+      responses:
+        '200':
+          description: Accreditation service is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /health:
+    get:
+      tags:
+        - Service
+      summary: Health check
+      responses:
+        '200':
+          description: Health check passed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/institutions:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Create institution details
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Institution created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Identity
+      summary: Get institution details
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Institution details returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/institutions/{id}:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Update institution details using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Institution updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Institutional Identity
+      summary: Update institution details
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Institution updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/vision-mission:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Create vision and mission entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Vision and mission created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Identity
+      summary: Get vision and mission entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Vision and mission returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/institutional-history:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Create institutional history entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Institutional history created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Identity
+      summary: Get institutional history entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Institutional history returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/governing-body:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Create governing body entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Governing body entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Identity
+      summary: Get governing body entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Governing body returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/governing-body/{id}:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Update governing body entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Governing body updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Institutional Identity
+      summary: Update governing body entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Governing body updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/committees:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Create committee entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Committee created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Identity
+      summary: Get committee entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Committees returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/committees/{id}:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Update committee entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Committee updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Institutional Identity
+      summary: Update committee entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Committee updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/accreditations:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Create accreditation entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Accreditation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Identity
+      summary: Get accreditation entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Accreditations returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/accreditations/{id}:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Update accreditation entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Accreditation updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Institutional Identity
+      summary: Update accreditation entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Accreditation updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/documents:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Create NAAC document entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Identity
+      summary: Get NAAC document entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Documents returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/document-by-title:
+    post:
+      tags:
+        - Institutional Identity
+      summary: Upsert NAAC document by title
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Document upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Identity
+      summary: Get NAAC document by title and institution code
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Document returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/academic:
+    post:
+      tags:
+        - Academic
+      summary: Create academic calendar entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Academic calendar created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Academic
+      summary: Get academic calendar entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Academic calendars returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/academic/{id}:
+    put:
+      tags:
+        - Academic
+      summary: Update academic calendar entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Academic calendar updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/program:
+    post:
+      tags:
+        - Academic
+      summary: Create program entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Program created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Academic
+      summary: Get program entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Programs returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/program/{id}:
+    put:
+      tags:
+        - Academic
+      summary: Update program entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Program updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/courses:
+    post:
+      tags:
+        - Academic
+      summary: Create course entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Course created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Academic
+      summary: Get course entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Courses returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/courses/{id}:
+    put:
+      tags:
+        - Academic
+      summary: Update course entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Course updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/students:
+    post:
+      tags:
+        - Academic
+      summary: Create NAAC student entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Student entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Academic
+      summary: Get NAAC student entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Students returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/students/{id}:
+    put:
+      tags:
+        - Academic
+      summary: Update NAAC student entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Student entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/faculty:
+    post:
+      tags:
+        - Research
+      summary: Create faculty profile entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Faculty entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Research
+      summary: Get faculty profile entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Faculty entries returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/faculty/{id}:
+    post:
+      tags:
+        - Research
+      summary: Update faculty profile entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Faculty entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Research
+      summary: Update faculty profile entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Faculty entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/publications:
+    post:
+      tags:
+        - Research
+      summary: Create publications entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Publications entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Research
+      summary: Get publications entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Publications returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/publications/{id}:
+    post:
+      tags:
+        - Research
+      summary: Update publications entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Publications entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Research
+      summary: Update publications entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Publications entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/faculty-awards:
+    post:
+      tags:
+        - Research
+      summary: Create faculty awards entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Faculty award entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Research
+      summary: Get faculty awards entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Faculty awards returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/faculty-awards/{id}:
+    post:
+      tags:
+        - Research
+      summary: Update faculty awards entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Faculty awards updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Research
+      summary: Update faculty awards entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Faculty awards updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/phd-scholars:
+    post:
+      tags:
+        - Research
+      summary: Create PhD scholars entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: PhD scholars entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Research
+      summary: Get PhD scholars entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: PhD scholars returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/phd-scholars/{id}:
+    post:
+      tags:
+        - Research
+      summary: Update PhD scholars entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: PhD scholars updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Research
+      summary: Update PhD scholars entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: PhD scholars updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/research-projects:
+    post:
+      tags:
+        - Research
+      summary: Create research projects entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Research project entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Research
+      summary: Get research projects entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Research projects returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/research-projects/{id}:
+    post:
+      tags:
+        - Research
+      summary: Update research projects entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Research project updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Research
+      summary: Update research projects entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Research project updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/patents:
+    post:
+      tags:
+        - Research
+      summary: Create patents entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Patent entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Research
+      summary: Get patents entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Patents returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/patents/{id}:
+    post:
+      tags:
+        - Research
+      summary: Update patents entry using POST
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Patent entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Research
+      summary: Update patents entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Patent entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/student-support:
+    post:
+      tags:
+        - Student Support
+      summary: Create student support entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Student support created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Student Support
+      summary: Get student support entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Student support returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/student-support/{id}:
+    put:
+      tags:
+        - Student Support
+      summary: Update student support entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Student support updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/grievances:
+    post:
+      tags:
+        - Student Support
+      summary: Create grievance entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Grievance created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Student Support
+      summary: Get grievance entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Grievances returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/grievances/{id}:
+    put:
+      tags:
+        - Student Support
+      summary: Update grievance entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Grievance updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/student-activities:
+    post:
+      tags:
+        - Student Support
+      summary: Create student activities entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Student activities created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Student Support
+      summary: Get student activities entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Student activities returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/student-activities/{id}:
+    put:
+      tags:
+        - Student Support
+      summary: Update student activities entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Student activities updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/placements:
+    post:
+      tags:
+        - Student Support
+      summary: Create placement entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Placement created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Student Support
+      summary: Get placement entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Placements returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/placements/{id}:
+    put:
+      tags:
+        - Student Support
+      summary: Update placement entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Placement updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/alumni:
+    post:
+      tags:
+        - Student Support
+      summary: Create alumni entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Alumni created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Student Support
+      summary: Get alumni entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Alumni returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/alumni/{id}:
+    put:
+      tags:
+        - Student Support
+      summary: Update alumni entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Alumni updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/naac-docs:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create NAAC docs entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: NAAC docs entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get NAAC docs entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: NAAC docs returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/naac-docs/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update NAAC docs entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: NAAC docs updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/best-practices:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create best practices entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Best practices created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get best practices entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Best practices returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/best-practices/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update best practices entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Best practices updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/institutional-distinctiveness:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create institutional distinctiveness entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Institutional distinctiveness created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get institutional distinctiveness entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Institutional distinctiveness returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/institutional-distinctiveness/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update institutional distinctiveness entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Institutional distinctiveness updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/financial-documents:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create financial documents entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Financial documents created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get financial documents entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Financial documents returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/financial-documents/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update financial documents entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Financial documents updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/iqac-documents:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create IQAC documents entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: IQAC documents created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get IQAC documents entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: IQAC documents returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/iqac-documents/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update IQAC documents entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: IQAC documents updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/green-initiatives:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create green initiatives entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Green initiatives created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get green initiatives entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Green initiatives returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/green-initiatives/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update green initiatives entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Green initiatives updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/extension-activities:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create extension activities entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Extension activities created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get extension activities entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Extension activities returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/extension-activities/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update extension activities entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Extension activities updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/achievements:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create achievements entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Achievement created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get achievements entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Achievements returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/achievements/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update achievement entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Achievement updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/evidence:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create evidence entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Evidence created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get evidence entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Evidence returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/admission:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create admission metrics entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Admission metrics created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get admission metrics entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Admission metrics returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/admission/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update admission metrics entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Admission metrics updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/examination:
+    post:
+      tags:
+        - Institutional Values
+      summary: Create examination metrics entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Examination metrics created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    get:
+      tags:
+        - Institutional Values
+      summary: Get examination metrics entries
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Examination metrics returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/examination/{id}:
+    put:
+      tags:
+        - Institutional Values
+      summary: Update examination metrics entry
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Examination metrics updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/infrastructure-items:
+    get:
+      tags:
+        - Infrastructure
+      summary: Get infrastructure items
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Infrastructure items returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Infrastructure
+      summary: Create infrastructure item entry
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Infrastructure item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/infrastructure-items/{id}:
+    post:
+      tags:
+        - Infrastructure
+      summary: Update infrastructure item entry using POST
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Infrastructure item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    put:
+      tags:
+        - Infrastructure
+      summary: Update infrastructure item entry
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Infrastructure item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/library-resources:
+    get:
+      tags:
+        - Infrastructure
+      summary: Get library resources
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Library resources returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Infrastructure
+      summary: Create library resources entry
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Library resources created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/library-resources/{id}:
+    put:
+      tags:
+        - Infrastructure
+      summary: Update library resources entry
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Library resources updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/it-infrastructure:
+    get:
+      tags:
+        - Infrastructure
+      summary: Get IT infrastructure entries
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: IT infrastructure returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Infrastructure
+      summary: Create IT infrastructure entry
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: IT infrastructure created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/it-infrastructure/{id}:
+    put:
+      tags:
+        - Infrastructure
+      summary: Update IT infrastructure entry
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: IT infrastructure updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/hostel-facilities:
+    get:
+      tags:
+        - Infrastructure
+      summary: Get hostel facilities entries
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Hostel facilities returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Infrastructure
+      summary: Create hostel facilities entry
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '201':
+          description: Hostel facilities created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/accreditation/naac/hostel-facilities/{id}:
+    put:
+      tags:
+        - Infrastructure
+      summary: Update hostel facilities entry
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PathId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MultipartRequest'
+      responses:
+        '200':
+          description: Hostel facilities updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

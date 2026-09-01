@@ -1,0 +1,1406 @@
+openapi: 3.0.0
+info:
+  title: Finance & Accounting Service API
+  description: Comprehensive Double-Entry Accounting & Financial Management API for ShikshaPrime College Management System, supporting multi-type vouchers (Receipt, Payment, Contra, Journal, Manual), general ledgers, Chart of Accounts (COA) hierarchical grouping, banking operations, financial reports (Day Book, Cash Book, Bank Book, Trial Balance, Income/Expenditure, Balance Sheet), dashboard metrics, and audit trail logs.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Service
+    description: Service health and metadata
+  - name: Vouchers
+    description: Double-entry financial vouchers (Receipt, Payment, Contra, Journal, Manual)
+  - name: Ledgers
+    description: General ledgers, account classification, and real-time balance inquiries
+  - name: Chart of Accounts
+    description: Hierarchical Chart of Account (COA) groups and tree structures
+  - name: Banks & Accounts
+    description: Bank master, branches, bank accounts, and financial calendar years
+  - name: Reports
+    description: Core financial accounting reports and statements
+  - name: Dashboard
+    description: Real-time financial statistics and recent transaction activity
+  - name: Audit Trail
+    description: Immutable financial transaction audit logs and compliance history
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "An error occurred while processing the request"
+      additionalProperties: true
+
+    VoucherLineRequest:
+      type: object
+      required:
+        - ledger_id
+      properties:
+        ledger_id:
+          type: integer
+          description: Database ID of ledger account
+          example: 10
+        debit:
+          type: number
+          default: 0
+          example: 50000.00
+        credit:
+          type: number
+          default: 0
+          example: 0.00
+        narration:
+          type: string
+          nullable: true
+          example: "Tuition fee credit"
+
+    CreateVoucherRequest:
+      type: object
+      required:
+        - voucher_type
+        - voucher_date
+        - lines
+      properties:
+        voucher_type:
+          type: string
+          enum: [RECEIPT, PAYMENT, CONTRA, JOURNAL]
+          example: "RECEIPT"
+        voucher_date:
+          type: string
+          format: date
+          example: "2026-08-22"
+        reference_id:
+          type: string
+          nullable: true
+          example: "STU-2026-001"
+        narration:
+          type: string
+          nullable: true
+          example: "Semester 1 tuition fee collection"
+        created_by:
+          type: integer
+          nullable: true
+          example: 1
+        lines:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/VoucherLineRequest'
+
+    CreateReceiptVoucherRequest:
+      type: object
+      required:
+        - payment_mode
+      properties:
+        payment_mode:
+          type: string
+          enum: [CASH, BANK, CHEQUE, ONLINE]
+          example: "BANK"
+        bank_account_id:
+          type: integer
+          nullable: true
+          description: Required when payment_mode is BANK or CHEQUE
+          example: 1
+        student_id:
+          type: string
+          nullable: true
+          example: "STU-2026-001"
+        narration:
+          type: string
+          nullable: true
+          example: "Tuition and lab fee collection"
+        created_by:
+          type: integer
+          nullable: true
+          example: 1
+        fee_heads:
+          type: array
+          items:
+            type: object
+            required:
+              - ledger_id
+              - amount
+            properties:
+              ledger_id:
+                type: integer
+                example: 15
+              amount:
+                type: number
+                example: 25000.00
+              discount:
+                type: number
+                default: 0
+                example: 0.00
+              fine:
+                type: number
+                default: 0
+                example: 0.00
+
+    CreatePaymentVoucherRequest:
+      type: object
+      required:
+        - payment_mode
+      properties:
+        payment_mode:
+          type: string
+          enum: [CASH, BANK, CHEQUE, ONLINE]
+          example: "BANK"
+        bank_account_id:
+          type: integer
+          nullable: true
+          description: Required when payment_mode is BANK or CHEQUE
+          example: 1
+        expense_head_id:
+          type: integer
+          nullable: true
+          description: Single expense ledger ID (or use expense_heads array)
+          example: 22
+        amount:
+          type: number
+          nullable: true
+          example: 12000.00
+        expense_heads:
+          type: array
+          nullable: true
+          items:
+            type: object
+            required:
+              - expense_head_id
+              - amount
+            properties:
+              expense_head_id:
+                type: integer
+                example: 22
+              amount:
+                type: number
+                example: 12000.00
+        narration:
+          type: string
+          nullable: true
+          example: "Office supplies and stationery purchase"
+        created_by:
+          type: integer
+          nullable: true
+          example: 1
+
+    CreateContraVoucherRequest:
+      type: object
+      required:
+        - from_ledger_id
+        - to_ledger_id
+        - amount
+      properties:
+        from_ledger_id:
+          type: integer
+          description: Source ledger ID (Cash or Bank account)
+          example: 2
+        to_ledger_id:
+          type: integer
+          description: Destination ledger ID (Cash or Bank account)
+          example: 5
+        amount:
+          type: number
+          example: 50000.00
+        narration:
+          type: string
+          nullable: true
+          example: "Cash withdrawal from State Bank of India account for petty cash"
+        created_by:
+          type: integer
+          nullable: true
+          example: 1
+
+    CreateJournalVoucherRequest:
+      type: object
+      required:
+        - lines
+      properties:
+        narration:
+          type: string
+          nullable: true
+          example: "Adjustment entry for prepaid insurance allocation"
+        created_by:
+          type: integer
+          nullable: true
+          example: 1
+        lines:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/VoucherLineRequest'
+
+    CreateLedgerRequest:
+      type: object
+      required:
+        - name
+        - group_id
+        - type
+      properties:
+        name:
+          type: string
+          example: "Library Book Replacement Fund"
+        group_id:
+          type: integer
+          description: Chart of Account Group ID
+          example: 3
+        type:
+          type: string
+          enum: [ASSET, LIABILITY, INCOME, EXPENSE]
+          example: "INCOME"
+        opening_balance:
+          type: number
+          default: 0
+          example: 0.00
+        is_system:
+          type: integer
+          enum: [0, 1]
+          default: 0
+          example: 0
+        is_active:
+          type: integer
+          enum: [0, 1]
+          default: 1
+          example: 1
+
+    UpdateLedgerRequest:
+      type: object
+      required:
+        - id
+        - name
+        - group_id
+        - type
+      properties:
+        id:
+          type: integer
+          example: 12
+        name:
+          type: string
+          example: "Library Book Replacement Fund (Updated)"
+        group_id:
+          type: integer
+          example: 3
+        type:
+          type: string
+          enum: [ASSET, LIABILITY, INCOME, EXPENSE]
+          example: "INCOME"
+        opening_balance:
+          type: number
+          example: 1000.00
+        is_active:
+          type: integer
+          enum: [0, 1]
+          example: 1
+
+    CreateCoaGroupRequest:
+      type: object
+      required:
+        - financial_year
+        - name
+        - root_type
+      properties:
+        financial_year:
+          type: string
+          example: "2026-2027"
+        name:
+          type: string
+          example: "Laboratory Operating Expenses"
+        parent_group_id:
+          type: integer
+          nullable: true
+          example: 4
+        root_type:
+          type: string
+          enum: [ASSET, LIABILITY, INCOME, EXPENSE]
+          example: "EXPENSE"
+        is_system:
+          type: integer
+          enum: [0, 1]
+          default: 0
+          example: 0
+
+    CreateBankRequest:
+      type: object
+      required:
+        - bank_name
+        - bank_code
+        - ifsc_prefix
+      properties:
+        bank_name:
+          type: string
+          example: "State Bank of India"
+        bank_code:
+          type: string
+          example: "SBI"
+        ifsc_prefix:
+          type: string
+          example: "SBIN"
+        is_active:
+          type: integer
+          enum: [0, 1]
+          default: 1
+          example: 1
+
+    CreateBankBranchRequest:
+      type: object
+      required:
+        - bank_id
+        - branch_name
+      properties:
+        bank_id:
+          type: integer
+          example: 1
+        branch_name:
+          type: string
+          example: "Main Branch, MG Road"
+        branch_address:
+          type: string
+          nullable: true
+          example: "45 MG Road, Bangalore - 560001"
+        ifsc_code:
+          type: string
+          nullable: true
+          example: "SBIN0000123"
+        micr_code:
+          type: string
+          nullable: true
+          example: "560002001"
+        contact_person:
+          type: string
+          nullable: true
+          example: "Anil Kumar"
+        contact_phone:
+          type: string
+          nullable: true
+          example: "080-22233344"
+        is_active:
+          type: integer
+          enum: [0, 1]
+          default: 1
+          example: 1
+
+    CreateBankAccountRequest:
+      type: object
+      required:
+        - bank_id
+        - branch_id
+        - account_name
+        - account_number
+      properties:
+        bank_id:
+          type: integer
+          example: 1
+        branch_id:
+          type: integer
+          example: 1
+        account_name:
+          type: string
+          example: "College Operations Account"
+        account_number:
+          type: string
+          example: "30012345678"
+        account_type:
+          type: string
+          enum: [SAVINGS, CURRENT, OVERDRAFT]
+          default: CURRENT
+          example: CURRENT
+        opening_balance:
+          type: number
+          default: 0
+          example: 500000.00
+        opening_balance_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-04-01"
+        is_primary_account:
+          type: integer
+          enum: [0, 1]
+          default: 0
+          example: 1
+        is_active:
+          type: integer
+          enum: [0, 1]
+          default: 1
+          example: 1
+
+paths:
+  /:
+    get:
+      tags:
+        - Service
+      summary: Service status
+      description: Returns health status, service name, version, and running port.
+      responses:
+        '200':
+          description: Service is running successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/vouchers:
+    get:
+      tags:
+        - Vouchers
+      summary: List vouchers
+      description: Returns list of vouchers with line items, supporting filtering by date range, voucher type, and reference ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+          example: "2026-08-01"
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+          example: "2026-08-31"
+        - in: query
+          name: voucher_type
+          schema:
+            type: string
+            enum: [RECEIPT, PAYMENT, CONTRA, JOURNAL]
+          example: "RECEIPT"
+        - in: query
+          name: reference_id
+          schema:
+            type: string
+          example: "STU-2026-001"
+      responses:
+        '200':
+          description: Vouchers fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/vouchers/create:
+    post:
+      tags:
+        - Vouchers
+      summary: Create double-entry voucher (Admin)
+      description: Creates a general double-entry accounting voucher with balanced debit and credit lines.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVoucherRequest'
+      responses:
+        '201':
+          description: Voucher created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid voucher payload or unbalanced debits/credits
+
+  /api/finance/vouchers/{id}:
+    get:
+      tags:
+        - Vouchers
+      summary: Get voucher details by ID
+      description: Returns voucher header along with all credit/debit entry lines and mapped ledger accounts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Voucher fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Voucher not found
+    delete:
+      tags:
+        - Vouchers
+      summary: Delete voucher
+      description: Deletes voucher and reverses balance entries from ledger caches.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Voucher deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Voucher not found
+
+  /api/finance/vouchers/receipt:
+    post:
+      tags:
+        - Vouchers
+      summary: Create receipt voucher
+      description: Records income or student fee collection into Cash, Bank, or Online payment accounts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReceiptVoucherRequest'
+      responses:
+        '201':
+          description: Receipt voucher created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid receipt payload
+
+  /api/finance/vouchers/payment:
+    post:
+      tags:
+        - Vouchers
+      summary: Create payment voucher
+      description: Records expense payments disbursed from Cash, Bank, or Online payment accounts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentVoucherRequest'
+      responses:
+        '201':
+          description: Payment voucher created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid payment payload
+
+  /api/finance/vouchers/contra:
+    post:
+      tags:
+        - Vouchers
+      summary: Create contra voucher
+      description: Transfers funds between internal Cash and Bank accounts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContraVoucherRequest'
+      responses:
+        '201':
+          description: Contra voucher created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid contra payload or same source and destination ledger
+
+  /api/finance/vouchers/journal:
+    post:
+      tags:
+        - Vouchers
+      summary: Create journal voucher
+      description: Records non-cash adjusting journal entries and inter-ledger transfers.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJournalVoucherRequest'
+      responses:
+        '201':
+          description: Journal voucher created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Unbalanced debits and credits
+
+  /api/finance/vouchers/manual:
+    post:
+      tags:
+        - Vouchers
+      summary: Create manual voucher
+      description: Records manual journal voucher with custom line items within a transaction.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVoucherRequest'
+      responses:
+        '201':
+          description: Manual voucher created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/ledgers:
+    get:
+      tags:
+        - Ledgers
+      summary: List all ledgers
+      description: Returns all general ledgers with filters for account classification type and parent group.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [ASSET, LIABILITY, INCOME, EXPENSE]
+          example: "ASSET"
+        - in: query
+          name: group_id
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: is_system
+          schema:
+            type: integer
+            enum: [0, 1]
+          example: 0
+        - in: query
+          name: is_active
+          schema:
+            type: integer
+            enum: [0, 1]
+          example: 1
+      responses:
+        '200':
+          description: Ledgers fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Ledgers
+      summary: Create a ledger
+      description: Creates a new ledger account and initializes its balance cache.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLedgerRequest'
+      responses:
+        '201':
+          description: Ledger created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing required fields
+
+  /api/finance/ledgers/{id}:
+    get:
+      tags:
+        - Ledgers
+      summary: Get ledger by ID
+      description: Returns ledger account details and Chart of Account group mapping.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Ledger fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Ledger not found
+    put:
+      tags:
+        - Ledgers
+      summary: Update ledger
+      description: Updates ledger name, group, classification type, and opening balance.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLedgerRequest'
+      responses:
+        '200':
+          description: Ledger updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Ledger not found
+    delete:
+      tags:
+        - Ledgers
+      summary: Delete ledger
+      description: Deletes a user-created ledger account (system ledgers or ledgers with voucher entries cannot be deleted).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: Ledger deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Cannot delete system ledger or ledger with existing vouchers
+
+  /api/finance/ledgers/type/{type}:
+    get:
+      tags:
+        - Ledgers
+      summary: List ledgers by classification type
+      description: Returns ledgers filtered by root type (ASSET, LIABILITY, INCOME, EXPENSE).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [ASSET, LIABILITY, INCOME, EXPENSE]
+          example: "ASSET"
+      responses:
+        '200':
+          description: Ledgers fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/ledgers/{id}/balance:
+    get:
+      tags:
+        - Ledgers
+      summary: Get ledger current balance
+      description: Returns real-time computed closing balance for a ledger.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Ledger balance fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/chart-of-account-groups:
+    get:
+      tags:
+        - Chart of Accounts
+      summary: List Chart of Account groups
+      description: Returns list of all Chart of Account parent and child groups.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Groups fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Chart of Accounts
+      summary: Create Chart of Account group
+      description: Creates a new COA grouping for financial account classification.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCoaGroupRequest'
+      responses:
+        '201':
+          description: COA group created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing required fields
+
+  /api/finance/chart-of-account-groups/tree:
+    get:
+      tags:
+        - Chart of Accounts
+      summary: Get Chart of Accounts hierarchical tree
+      description: Returns nested recursive tree representation of Chart of Accounts for visualization.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: COA Tree fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/banks:
+    get:
+      tags:
+        - Banks & Accounts
+      summary: List registered banks
+      description: Returns list of banking institutions.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Banks fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Banks & Accounts
+      summary: Create bank master record
+      description: Registers a new bank in the master directory.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBankRequest'
+      responses:
+        '201':
+          description: Bank created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/bank-branches:
+    get:
+      tags:
+        - Banks & Accounts
+      summary: List bank branches
+      description: Returns bank branches optionally filtered by bank ID.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: bank_id
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Branches fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Banks & Accounts
+      summary: Create bank branch
+      description: Adds a branch location for a registered bank.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBankBranchRequest'
+      responses:
+        '201':
+          description: Branch created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/bank-accounts:
+    get:
+      tags:
+        - Banks & Accounts
+      summary: List bank accounts
+      description: Returns all institutional bank accounts along with their associated ledger accounts and balances.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Bank accounts fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Banks & Accounts
+      summary: Create bank account
+      description: Registers a new institutional bank account and auto-creates its corresponding Asset ledger and balance cache.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBankAccountRequest'
+      responses:
+        '201':
+          description: Bank account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/bank-accounts/{id}:
+    get:
+      tags:
+        - Banks & Accounts
+      summary: Get bank account by ID
+      description: Returns bank account details with bank and branch information.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Bank account fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Bank account not found
+
+  /api/finance/financial-years:
+    get:
+      tags:
+        - Banks & Accounts
+      summary: List financial years
+      description: Returns active and historical financial fiscal accounting years.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Financial years fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/reports/day-book:
+    get:
+      tags:
+        - Reports
+      summary: Get Day Book report
+      description: Returns daily transactions summary and voucher line details for a given date.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Day book report fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/reports/ledger-statement:
+    get:
+      tags:
+        - Reports
+      summary: Get Ledger Statement report
+      description: Returns detailed chronological transaction ledger statement with opening balance, debits, credits, and running balance.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: ledger_id
+          required: true
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+          example: "2026-08-01"
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+          example: "2026-08-31"
+      responses:
+        '200':
+          description: Ledger statement fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/reports/trial-balance:
+    get:
+      tags:
+        - Reports
+      summary: Get Trial Balance report
+      description: Returns debit and credit balances for all accounts verifying double-entry arithmetic balance.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Trial balance fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/reports/income-expenditure:
+    get:
+      tags:
+        - Reports
+      summary: Get Income & Expenditure statement
+      description: Returns total operating revenues, expenses, and surplus/deficit for a given period.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date
+          example: "2026-04-01"
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Income expenditure statement fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/reports/balance-sheet:
+    get:
+      tags:
+        - Reports
+      summary: Get Balance Sheet report
+      description: Returns financial position statement outlining total Assets, Liabilities, and Reserves.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Balance sheet fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/reports/cash-book:
+    get:
+      tags:
+        - Reports
+      summary: Get Cash Book report
+      description: Returns receipts and disbursements for cash accounts.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Cash book report fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/reports/bank-book:
+    get:
+      tags:
+        - Reports
+      summary: Get Bank Book report
+      description: Returns chronological bank transactions and closing balances for a bank account.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: bankAccountId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Bank book report fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/dashboard-stats:
+    get:
+      tags:
+        - Dashboard
+      summary: Get financial dashboard summary statistics
+      description: Returns financial KPIs including total income, expenses, cash/bank liquid balance, and receivables/payables.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard stats fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/recent-transactions:
+    get:
+      tags:
+        - Dashboard
+      summary: Get recent transactions feed
+      description: Returns the latest voucher transactions for real-time dashboard display.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Recent transactions fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/finance/audit-trail:
+    get:
+      tags:
+        - Audit Trail
+      summary: Get financial audit trail logs
+      description: Returns immutable audit logs tracking voucher creations, ledger modifications, and financial changes.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: module
+          schema:
+            type: string
+          example: "vouchers"
+        - in: query
+          name: action
+          schema:
+            type: string
+          example: "create"
+        - in: query
+          name: user
+          schema:
+            type: string
+          example: "admin"
+        - in: query
+          name: fromDate
+          schema:
+            type: string
+            format: date
+          example: "2026-08-01"
+        - in: query
+          name: toDate
+          schema:
+            type: string
+            format: date
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Audit logs fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

@@ -1,6 +1,8 @@
 import axios from 'axios';
-import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
+// Shared resolver — a private `localhost` fallback here meant a physical
+// device pointed registration calls at the phone itself.
+import { API_URL } from '../../config/env';
 import {
   AcademicYear,
   Program,
@@ -11,8 +13,6 @@ import {
   RegistrationResponse,
   RegistrationStatusResponse,
 } from '../../types/registration';
-
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:4000/api/mobile';
 
 // Public client — no Authorization header (user is not logged in yet)
 const publicAxios = axios.create({

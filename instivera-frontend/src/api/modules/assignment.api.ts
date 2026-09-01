@@ -14,7 +14,10 @@ import {
 
 const client = apiClient.getClient();
 
-const isStudent = (): boolean => useAuthStore.getState().user?.role === 'student';
+// Reads the store's canonical `role` (hydrated from SecureStore / the JWT).
+// This previously read `user?.role`, which was null after every app restart —
+// so students silently fell through to the teacher endpoints and got a 403.
+const isStudent = (): boolean => useAuthStore.getState().role === 'student';
 
 // ── Raw backend shapes (Sequelize JSON) — instivera-api's assignments module
 // returns model rows directly rather than a pre-shaped view-model, so this

@@ -1,0 +1,2004 @@
+openapi: 3.0.0
+info:
+  title: Identity & Access Management Service API
+  description: Comprehensive API documentation for Identity, Authentication, RBAC (Role-Based Access Control), Class Routines & Timetable Scheduling, Multi-Gateway Payments (PhonePe, Razorpay), Academic Structure, and Notices in ShikshaPrime College Management System.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Health
+    description: Service health and tenant DB circuit breaker checks
+  - name: Institutions
+    description: Master tenant college & institution discovery
+  - name: Auth & Account
+    description: User authentication, JWT sessions, OTP verification, and password recovery
+  - name: Academic Masters
+    description: Academic years, departments, classes, degree programs, subjects, and fee structures
+  - name: Teacher Portal
+    description: Teacher assigned classes, programs, and academic schedules
+  - name: Admin Dashboard
+    description: Administrative identity metrics and statistics
+  - name: Notices & Bulletins
+    description: College-wide and departmental notices, announcements, and attachment documents
+  - name: Phone OTP
+    description: SMS OTP verification for student and staff mobile numbers
+  - name: PhonePe Payments
+    description: PhonePe payment gateway integration, order creation, webhooks, and status checks
+  - name: Razorpay Payments
+    description: Razorpay order generation and payment signature verification
+  - name: Class Routines
+    description: Timetable scheduling, automated conflict validation, teacher/student schedules, and routine CRUD
+  - name: RBAC & Permissions
+    description: Role-Based Access Control, role creation, user role mappings, module permissions, and granular action grants
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 1
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 0
+        message:
+          type: string
+          example: "An error occurred"
+      additionalProperties: true
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: "admin@shikshaprime.com"
+        password:
+          type: string
+          format: password
+          example: "Admin@123"
+
+    ValidateEmailRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "student@example.com"
+
+    EmailOtpRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: "student@example.com"
+
+    VerifyEmailOtpRequest:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+          example: "student@example.com"
+        otp:
+          type: string
+          example: "123456"
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - email
+        - password
+        - confirmPassword
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+          example: "student@example.com"
+        password:
+          type: string
+          format: password
+          example: "NewSecurePassword#2026"
+        confirmPassword:
+          type: string
+          format: password
+          example: "NewSecurePassword#2026"
+        otp:
+          type: string
+          example: "123456"
+
+    SendOtpRequest:
+      type: object
+      required:
+        - phone_number
+      properties:
+        phone_number:
+          type: string
+          example: "9876543210"
+
+    VerifyOtpRequest:
+      type: object
+      required:
+        - phone_number
+        - otp
+      properties:
+        phone_number:
+          type: string
+          example: "9876543210"
+        otp:
+          type: string
+          example: "123456"
+
+    PhonePeInitiateRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          example: 25000.00
+        merchantTransactionId:
+          type: string
+          example: "TXN_20260822_001"
+        redirectUrl:
+          type: string
+          example: "https://portal.shikshaprime.com/payment-success"
+        callbackUrl:
+          type: string
+          example: "https://api.shikshaprime.com/api/identity/payments/phonepe/webhook"
+        mobileNumber:
+          type: string
+          example: "9876543210"
+      additionalProperties: true
+
+    RazorpayOrderRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          example: 15000.00
+        currency:
+          type: string
+          default: "INR"
+          example: "INR"
+        receipt:
+          type: string
+          example: "rcpt_2026_001"
+      additionalProperties: true
+
+    RazorpayVerifyRequest:
+      type: object
+      required:
+        - razorpay_order_id
+        - razorpay_payment_id
+        - razorpay_signature
+      properties:
+        razorpay_order_id:
+          type: string
+          example: "order_DBJOWzybf0sJbb"
+        razorpay_payment_id:
+          type: string
+          example: "pay_29QQoUBi66xm2f"
+        razorpay_signature:
+          type: string
+          example: "9ef4dffbfdbf40242a5c395ceadd82c4202084716423cf8e3ff9733f373e236a"
+
+    RoutineEntryRequest:
+      type: object
+      required:
+        - day_of_week
+        - start_time
+        - end_time
+        - subject_id
+        - teacher_id
+      properties:
+        day_of_week:
+          type: string
+          enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+          example: "MONDAY"
+        start_time:
+          type: string
+          example: "09:00"
+        end_time:
+          type: string
+          example: "10:00"
+        subject_id:
+          type: integer
+          example: 101
+        teacher_id:
+          type: integer
+          example: 12
+        room_number:
+          type: string
+          nullable: true
+          example: "Room 304"
+        period_number:
+          type: integer
+          nullable: true
+          example: 1
+
+    CreateRoutineRequest:
+      type: object
+      required:
+        - routine_number
+        - title
+        - effective_date
+        - class_id
+        - academic_year_id
+      properties:
+        routine_number:
+          type: string
+          example: "ROUT-CSE-2026-A"
+        title:
+          type: string
+          example: "CSE 3rd Year Section A Weekly Routine"
+        effective_date:
+          type: string
+          format: date
+          example: "2026-08-01"
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, DRAFT]
+          default: ACTIVE
+          example: "ACTIVE"
+        class_id:
+          type: integer
+          example: 3
+        academic_year_id:
+          type: integer
+          example: 2
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineEntryRequest'
+
+    ValidateConflictsRequest:
+      type: object
+      required:
+        - entries
+      properties:
+        class_id:
+          type: integer
+          example: 3
+        exclude_routine_id:
+          type: integer
+          nullable: true
+          example: 1
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineEntryRequest'
+
+    CreateRoleRequest:
+      type: object
+      required:
+        - roleName
+      properties:
+        roleName:
+          type: string
+          example: "ACADEMIC_COORDINATOR"
+        description:
+          type: string
+          nullable: true
+          example: "Oversees curriculum, schedules, and faculty assignments"
+
+    UpdateRoleRequest:
+      type: object
+      properties:
+        roleName:
+          type: string
+          example: "SENIOR_ACADEMIC_COORDINATOR"
+        description:
+          type: string
+          example: "Updated role description"
+
+    AssignRolesToUserRequest:
+      type: object
+      required:
+        - roleIds
+      properties:
+        roleIds:
+          type: array
+          items:
+            type: integer
+          example: [2, 5]
+
+    AssignUsersToRoleRequest:
+      type: object
+      required:
+        - userIds
+      properties:
+        userIds:
+          type: array
+          items:
+            type: integer
+          example: [10, 15, 22]
+
+    AssignPermissionsToRoleRequest:
+      type: object
+      required:
+        - permissionIds
+      properties:
+        permissionIds:
+          type: array
+          items:
+            type: integer
+          example: [101, 102, 103, 104]
+
+    AssignModulePermissionsRequest:
+      type: object
+      required:
+        - permissions
+      properties:
+        permissions:
+          type: array
+          items:
+            type: object
+            required:
+              - module_id
+              - can_read
+              - can_write
+              - can_delete
+            properties:
+              module_id:
+                type: integer
+                example: 1
+              can_read:
+                type: boolean
+                example: true
+              can_write:
+                type: boolean
+                example: true
+              can_delete:
+                type: boolean
+                example: false
+
+    RoleAndModulePermissionsRequest:
+      type: object
+      required:
+        - roleId
+      properties:
+        roleId:
+          type: integer
+          example: 2
+        modulePermissions:
+          type: array
+          items:
+            type: object
+            properties:
+              module_id:
+                type: integer
+              can_read:
+                type: boolean
+              can_write:
+                type: boolean
+              can_delete:
+                type: boolean
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns health status of the Identity service.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Service is healthy"
+
+  /api/identity/ready/{tenant}:
+    get:
+      tags:
+        - Health
+      summary: Check tenant database readiness
+      description: Tests database connectivity and circuit breaker status for a specific tenant.
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema:
+            type: string
+          example: "demo"
+      responses:
+        '200':
+          description: Tenant database is ready
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "READY"
+        '500':
+          description: Tenant database is not ready
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "NOT READY"
+
+  /api/identity/institutions:
+    get:
+      tags:
+        - Institutions
+      summary: List active institutions
+      description: Returns directory of all registered colleges and institutions for multi-tenant mobile/web app selection.
+      responses:
+        '200':
+          description: Institutions fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/authenticate-user:
+    post:
+      tags:
+        - Auth & Account
+      summary: Authenticate user login
+      description: Authenticates user credentials and returns JWT bearer token along with profile and role metadata.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Invalid username or password
+
+  /api/identity/validate-email:
+    post:
+      tags:
+        - Auth & Account
+      summary: Validate email existence
+      description: Checks if an email address is registered within the tenant database.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateEmailRequest'
+      responses:
+        '200':
+          description: Email validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/send-email-otp:
+    post:
+      tags:
+        - Auth & Account
+      summary: Send password reset OTP to email
+      description: Dispatches a 6-digit OTP code to the user's email address for password reset.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailOtpRequest'
+      responses:
+        '200':
+          description: OTP dispatched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/user-send-email-otp:
+    post:
+      tags:
+        - Auth & Account
+      summary: Send OTP to logged-in user email
+      description: Sends an OTP to the email address associated with the authenticated user profile.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: OTP dispatched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/verify-email-otp:
+    post:
+      tags:
+        - Auth & Account
+      summary: Verify email OTP
+      description: Verifies the submitted OTP against the temporary token cache.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailOtpRequest'
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid or expired OTP
+
+  /api/identity/change-password:
+    post:
+      tags:
+        - Auth & Account
+      summary: Change / Reset password
+      description: Updates user password with OTP verification validation.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Password mismatch or invalid OTP
+
+  /api/identity/sr/academic-years:
+    get:
+      tags:
+        - Academic Masters
+      summary: List academic years
+      description: Returns active academic calendar years for registration and timetables.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Academic years fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/sr/classes:
+    get:
+      tags:
+        - Academic Masters
+      summary: List classes / sections
+      description: Returns all academic classes and sections.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Classes fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/sr/departments:
+    get:
+      tags:
+        - Academic Masters
+      summary: List primary departments
+      description: Returns top-level college academic departments.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Departments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/sr/departments/level-2:
+    get:
+      tags:
+        - Academic Masters
+      summary: List sub-departments (Level 2)
+      description: Returns second-level specialized sub-departments.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Sub-departments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/sr/programs:
+    get:
+      tags:
+        - Academic Masters
+      summary: List degree programs
+      description: Returns degree courses (e.g. B.Tech, BBA, M.Sc).
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Programs fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/sr/programs/subjects:
+    get:
+      tags:
+        - Academic Masters
+      summary: List program subjects
+      description: Returns subjects mapped to specific academic degree programs.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Program subjects fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/sr/programs/classes/semesters:
+    get:
+      tags:
+        - Academic Masters
+      summary: List class semesters
+      description: Returns semester terms for a specific program class.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Semesters fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/sr/programs/semesters:
+    get:
+      tags:
+        - Academic Masters
+      summary: List program semesters
+      description: Returns all semester terms associated with degree programs.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Program semesters fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/sr/fee-structure:
+    get:
+      tags:
+        - Academic Masters
+      summary: Get admission fee structure
+      description: Returns tuition and admission fee breakdowns by program and quota.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Fee structure fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/files/documents/{filename}:
+    get:
+      tags:
+        - Notices & Bulletins
+      summary: Download / View document
+      description: Serves uploaded document attachment by filename.
+      parameters:
+        - in: path
+          name: filename
+          required: true
+          schema:
+            type: string
+          example: "notice_1716382910.pdf"
+      responses:
+        '200':
+          description: Document binary stream
+        '404':
+          description: Document not found
+
+  /api/identity/teacher/classes:
+    get:
+      tags:
+        - Teacher Portal
+      summary: Get teacher assigned classes
+      description: Returns classes assigned to the authenticated faculty member.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Teacher classes fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/teacher/programs:
+    get:
+      tags:
+        - Teacher Portal
+      summary: Get teacher assigned programs
+      description: Returns degree programs associated with the faculty member.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Teacher programs fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/teacher/academic-years:
+    get:
+      tags:
+        - Teacher Portal
+      summary: Get teacher academic years
+      description: Returns academic years for teacher coursework.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Academic years fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/teacher/all-classes:
+    get:
+      tags:
+        - Teacher Portal
+      summary: Get all classes for faculty
+      description: Returns all accessible classes across the institution for faculty role.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Classes fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/dashboard/admin:
+    get:
+      tags:
+        - Admin Dashboard
+      summary: Get admin dashboard data
+      description: Returns administrative KPIs, total users, faculty counts, student enrollment totals, and active sessions.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Admin dashboard data fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/notice/all:
+    get:
+      tags:
+        - Notices & Bulletins
+      summary: List all notices
+      description: Returns list of all published college announcements.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notices fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/notice/recent:
+    get:
+      tags:
+        - Notices & Bulletins
+      summary: List recent notices
+      description: Returns most recent notices for dashboard feeds.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Recent notices fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/notice/{id}:
+    get:
+      tags:
+        - Notices & Bulletins
+      summary: Get notice by ID
+      description: Returns full notice content with attachment metadata.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: "1"
+      responses:
+        '200':
+          description: Notice fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Notice not found
+    delete:
+      tags:
+        - Notices & Bulletins
+      summary: Delete notice
+      description: Removes notice record (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: "1"
+      responses:
+        '200':
+          description: Notice deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/notice:
+    post:
+      tags:
+        - Notices & Bulletins
+      summary: Create notice with file attachment
+      description: Publishes a new announcement with optional PDF/image attachment (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - title
+                - content
+              properties:
+                title:
+                  type: string
+                  example: "Midterm Examination Schedule Released"
+                content:
+                  type: string
+                  example: "Midterm examinations commence from September 15th. Check the timetable attached."
+                noticeAttachment:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Notice created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/otp/send:
+    post:
+      tags:
+        - Phone OTP
+      summary: Send SMS OTP to phone
+      description: Generates and sends OTP code to mobile phone via SMS gateway.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendOtpRequest'
+      responses:
+        '200':
+          description: OTP dispatched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/otp/verify:
+    post:
+      tags:
+        - Phone OTP
+      summary: Verify SMS OTP
+      description: Validates SMS OTP for mobile number verification.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: Phone verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid OTP
+
+  /api/identity/otp/check-validation/{phone_number}:
+    get:
+      tags:
+        - Phone OTP
+      summary: Check phone verification status
+      description: Checks if a mobile phone number has already been verified.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: phone_number
+          required: true
+          schema:
+            type: string
+          example: "9876543210"
+      responses:
+        '200':
+          description: Verification status returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/phonepe/webhook:
+    get:
+      tags:
+        - PhonePe Payments
+      summary: PhonePe webhook listener heartbeat
+      description: Confirms webhook endpoint listener availability.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Listener is active
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - PhonePe Payments
+      summary: Ingest PhonePe S2S webhook callback
+      description: Handles Server-to-Server asynchronous payment notification from PhonePe.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/phonepe/webhook/config:
+    get:
+      tags:
+        - PhonePe Payments
+      summary: Get PhonePe webhook configuration
+      description: Returns active PhonePe webhook callback configurations (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Webhook config fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - PhonePe Payments
+      summary: Set PhonePe webhook configuration
+      description: Registers or updates merchant webhook callback URLs (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Webhook config updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/phonepe/initiate:
+    post:
+      tags:
+        - PhonePe Payments
+      summary: Initiate PhonePe transaction
+      description: Generates PhonePe standard checkout redirect payload.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhonePeInitiateRequest'
+      responses:
+        '200':
+          description: Transaction initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/phonepe/status/{merchantOrderId}:
+    get:
+      tags:
+        - PhonePe Payments
+      summary: Query PhonePe payment status
+      description: Queries transaction status from PhonePe gateway.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: merchantOrderId
+          required: true
+          schema:
+            type: string
+          example: "ORD_2026_001"
+      responses:
+        '200':
+          description: Payment status fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/phonepe/callback:
+    get:
+      tags:
+        - PhonePe Payments
+      summary: PhonePe redirect callback
+      description: Handles customer browser redirection after checkout completion.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Callback handled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/phonepe/lookup-by-order/{merchantOrderId}:
+    get:
+      tags:
+        - PhonePe Payments
+      summary: Lookup PhonePe order
+      description: Retrieves transaction record by merchant order ID.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: path
+          name: merchantOrderId
+          required: true
+          schema:
+            type: string
+          example: "ORD_2026_001"
+      responses:
+        '200':
+          description: Transaction found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/phonepe/test:
+    get:
+      tags:
+        - PhonePe Payments
+      summary: Test PhonePe configuration
+      description: Diagnostics probe for PhonePe credentials and gateway connectivity.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Probe success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/razorpay/order:
+    post:
+      tags:
+        - Razorpay Payments
+      summary: Create Razorpay order
+      description: Initializes order with Razorpay payment gateway.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RazorpayOrderRequest'
+      responses:
+        '200':
+          description: Razorpay order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/payments/razorpay/verify:
+    post:
+      tags:
+        - Razorpay Payments
+      summary: Verify Razorpay payment signature
+      description: Validates HMAC-SHA256 signature from Razorpay checkout.
+      security:
+        - tenantHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RazorpayVerifyRequest'
+      responses:
+        '200':
+          description: Signature verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid signature
+
+  /api/identity/class-routines/meta-data:
+    get:
+      tags:
+        - Class Routines
+      summary: Get class routine metadata
+      description: Returns dropdown options including classes, academic years, subjects, and available teachers.
+      security:
+        - tenantHeader: []
+      responses:
+        '200':
+          description: Metadata fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/class-routines/student-schedule:
+    get:
+      tags:
+        - Class Routines
+      summary: Get student routine schedule
+      description: Returns weekly timetable schedule for the authenticated student or specified class.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: class_id
+          schema:
+            type: integer
+          example: 3
+        - in: query
+          name: academic_year_id
+          schema:
+            type: integer
+          example: 2
+      responses:
+        '200':
+          description: Student routine fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/class-routines/teacher-schedule:
+    get:
+      tags:
+        - Class Routines
+      summary: Get teacher routine schedule
+      description: Returns weekly class timetable assignments for the authenticated faculty member.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: day_of_week
+          schema:
+            type: string
+            enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+          example: "MONDAY"
+      responses:
+        '200':
+          description: Teacher schedule fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/class-routines/validate-conflicts:
+    post:
+      tags:
+        - Class Routines
+      summary: Validate routine scheduling conflicts
+      description: Pre-submit validation checking for teacher overlapping periods and room booking collisions.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateConflictsRequest'
+      responses:
+        '200':
+          description: Conflict evaluation complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/class-routines:
+    get:
+      tags:
+        - Class Routines
+      summary: List all class routines
+      description: Returns paginated master class routines with filtering by class, academic year, and status.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            default: 10
+          example: 10
+        - in: query
+          name: search
+          schema:
+            type: string
+          example: "CSE"
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [ALL, ACTIVE, INACTIVE, DRAFT]
+            default: ALL
+          example: "ACTIVE"
+        - in: query
+          name: class_id
+          schema:
+            type: integer
+          example: 3
+        - in: query
+          name: academic_year_id
+          schema:
+            type: integer
+          example: 2
+      responses:
+        '200':
+          description: Routines fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - Class Routines
+      summary: Create a new class routine
+      description: Creates a new master class routine and inserts all period schedule entries.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoutineRequest'
+      responses:
+        '201':
+          description: Class routine created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Required fields missing or schedule conflict detected
+
+  /api/identity/class-routines/{id}:
+    get:
+      tags:
+        - Class Routines
+      summary: Get class routine by ID
+      description: Returns single class routine including all day/period timetable entries.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Class routine fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Class routine not found
+    put:
+      tags:
+        - Class Routines
+      summary: Update class routine
+      description: Updates routine metadata and period schedule entries.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoutineRequest'
+      responses:
+        '200':
+          description: Class routine updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Class routine not found
+    delete:
+      tags:
+        - Class Routines
+      summary: Delete class routine
+      description: Deletes class routine and its associated timetable entries.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Class routine deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Class routine not found
+
+  /api/identity/rbac/permissions:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: Get current user permissions
+      description: Returns effective permissions and granted actions for the authenticated user.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Permissions fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/getAllUsers:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: List all users for RBAC
+      description: Returns directory of all staff, faculty, and users for role assignments.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Users fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/roles:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: List all roles
+      description: Returns all configured roles in the system.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Roles fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/createNewRole:
+    post:
+      tags:
+        - RBAC & Permissions
+      summary: Create a new role
+      description: Creates a new security role (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Role already exists
+
+  /api/identity/rbac/roles/{roleId}:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: Get role by ID
+      description: Returns role details and description.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Role fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Role not found
+    put:
+      tags:
+        - RBAC & Permissions
+      summary: Update role
+      description: Updates role name or description (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Role not found
+    delete:
+      tags:
+        - RBAC & Permissions
+      summary: Delete role
+      description: Deletes role from the system (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Role deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: Role not found
+
+  /api/identity/rbac/users/{userId}:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: Get user RBAC details
+      description: Returns user profile and associated roles.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: User fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '404':
+          description: User not found
+
+  /api/identity/rbac/users/{userId}/roles:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: Get roles assigned to user
+      description: Returns array of role objects assigned to the specified user.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: User roles fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - RBAC & Permissions
+      summary: Assign roles to user
+      description: Replaces or assigns active roles to a user (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRolesToUserRequest'
+      responses:
+        '200':
+          description: Roles assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/roles/{roleId}/users:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: Get users assigned to role
+      description: Returns list of users possessing the specified role.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Users fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - RBAC & Permissions
+      summary: Assign users to role
+      description: Bulk assigns multiple users to a role (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignUsersToRoleRequest'
+      responses:
+        '200':
+          description: Users assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/modules:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: List all system modules
+      description: Returns list of security modules (e.g. Student, Attendance, Finance, Library, Inventory).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Modules fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/modules/{moduleId}/permissions:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: List permissions by module
+      description: Returns available permission actions (READ, WRITE, DELETE, EXPORT) for a module.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: moduleId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Module permissions fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/roles/{roleId}/permissions:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: Get permissions assigned to role
+      description: Returns all permission items assigned to a role.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Role permissions fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - RBAC & Permissions
+      summary: Assign permissions to role
+      description: Grants permission IDs to a role (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPermissionsToRoleRequest'
+      responses:
+        '200':
+          description: Permissions assigned to role successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/users/{userId}/module-permissions:
+    get:
+      tags:
+        - RBAC & Permissions
+      summary: Get user module permissions
+      description: Returns user granular module-level permissions override table.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: User module permissions fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+    post:
+      tags:
+        - RBAC & Permissions
+      summary: Assign module permissions to user
+      description: Sets granular module read/write/delete overrides for a user (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignModulePermissionsRequest'
+      responses:
+        '200':
+          description: User module permissions assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/users/{userId}/role-module-permissions:
+    post:
+      tags:
+        - RBAC & Permissions
+      summary: Save role and module permissions
+      description: Updates user_roles and user_module_permissions when saving role matrices (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleAndModulePermissionsRequest'
+      responses:
+        '200':
+          description: Role and module permissions saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /api/identity/rbac/users/{userId}/roles/{roleId}:
+    delete:
+      tags:
+        - RBAC & Permissions
+      summary: Remove role and module permissions for user
+      description: Removes role assignment and associated module permission grants for a user (Admin only).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: integer
+          example: 1
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: integer
+          example: 2
+      responses:
+        '200':
+          description: Role and permissions removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'

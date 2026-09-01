@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -192,7 +192,10 @@ export const AttendanceTakerScreen: React.FC<Props> = ({ route, navigation }) =>
   const pan = useRef(new Animated.ValueXY()).current;
   const cardOpacity = useRef(new Animated.Value(1)).current;
 
-  const students: ClassStudent[] = data?.students ?? [];
+  // Memoised: `data?.students ?? []` produced a fresh array identity on every
+  // render, which invalidated `advance` (and the PanResponder built from it)
+  // continuously during swipe gestures.
+  const students: ClassStudent[] = useMemo(() => data?.students ?? [], [data]);
 
   const advance = useCallback(
     (status: AttendanceStatus) => {

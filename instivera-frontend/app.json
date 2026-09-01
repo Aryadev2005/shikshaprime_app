@@ -4,13 +4,13 @@
     "slug": "instivera-mobile",
     "version": "1.0.0",
     "scheme": "instivera",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "extra": {
-      "apiUrl": "http://172.20.10.2:4000/api/mobile"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.instivera.mobile",
@@ -31,7 +31,8 @@
               "NSExceptionAllowsInsecureHTTPLoads": true,
               "NSIncludesSubdomains": true
             }
-          }
+          },
+          "NSAllowsLocalNetworking": true
         }
       }
     },
@@ -50,7 +51,16 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-document-picker"
+      "expo-document-picker",
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ]
   }
 }

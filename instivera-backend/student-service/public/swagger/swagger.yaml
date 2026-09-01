@@ -1,0 +1,2461 @@
+openapi: 3.0.0
+info:
+  title: Student Service API
+  description: Comprehensive API documentation for Student Service in ShikshaPrime College Management System.
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current host environment
+
+tags:
+  - name: Health
+    description: Health check and readiness endpoints
+  - name: Students
+    description: Student profile management, search, lookups, and statistics
+  - name: Attendance
+    description: Daily student attendance, bulk marking, OCR attendance sheet upload, and reports
+  - name: Session Attendance
+    description: Class routine session-based attendance, bulk submissions, heatmap stats, and 3-day correction workflows
+  - name: Assignments
+    description: Student assignment statistics, submission, filtering, and file serving
+  - name: Learning Materials
+    description: Learning material uploads, student downloads, and course material management
+  - name: Notifications
+    description: Student notification management, read status, and clear operations
+  - name: Hierarchy
+    description: Academic hierarchy metadata (departments, programs, classes, semesters, subjects, academic years)
+  - name: Department Hierarchy
+    description: Department tree structure and subject mappings
+
+components:
+  securitySchemes:
+    tenantHeader:
+      type: apiKey
+      in: header
+      name: x-tenant
+      description: Tenant identifier (e.g. demo, test)
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer JWT token for authenticated requests
+
+  schemas:
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          oneOf:
+            - type: string
+              example: success
+            - type: integer
+              example: 1
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+          nullable: true
+          additionalProperties: true
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          oneOf:
+            - type: string
+              example: error
+            - type: integer
+              example: 0
+        message:
+          type: string
+          example: An error occurred
+        data:
+          type: object
+          nullable: true
+      additionalProperties: true
+
+    StudentSubjectItem:
+      type: object
+      properties:
+        subject_id:
+          type: integer
+          example: 1
+        is_core:
+          type: boolean
+          example: true
+
+    StudentCreateRequest:
+      type: object
+      required:
+        - registration_id
+        - section
+        - semester
+      properties:
+        registration_id:
+          type: string
+          example: REG-20260526-1234
+        section:
+          type: string
+          example: A
+        semester:
+          type: integer
+          example: 1
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentSubjectItem'
+      additionalProperties: true
+
+    StudentUpdateRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          example: John
+        last_name:
+          type: string
+          example: Doe
+        mobile:
+          type: string
+          example: "9876543210"
+        email:
+          type: string
+          example: john.doe@example.com
+        address_line:
+          type: string
+          example: 123 North Hall Street
+        city:
+          type: string
+          example: Bangalore
+        state:
+          type: string
+          example: Karnataka
+        pin_code:
+          type: string
+          example: "560001"
+        semester_id:
+          type: integer
+          example: 2
+        class_id:
+          type: integer
+          example: 1
+      additionalProperties: true
+
+    AttendanceMarkRequest:
+      type: object
+      required:
+        - student_id
+        - attendance_date
+        - attendance_status
+      properties:
+        student_id:
+          type: integer
+          example: 1
+        student_code:
+          type: string
+          example: STU-2026001
+        student_name:
+          type: string
+          example: John Doe
+        attendance_date:
+          type: string
+          format: date
+          example: "2026-08-22"
+        attendance_status:
+          type: string
+          enum: [PRESENT, ABSENT, LATE, HALF_DAY, HOLIDAY, LEAVE, ON_DUTY]
+          example: PRESENT
+        check_in_time:
+          type: string
+          example: "09:00:00"
+        check_out_time:
+          type: string
+          example: "16:00:00"
+        late_minutes:
+          type: integer
+          example: 0
+        attendance_type:
+          type: string
+          enum: [MANUAL, BIOMETRIC, RFID, MOBILE_APP]
+          example: MANUAL
+        marked_by:
+          type: string
+          example: TEACHER
+        remarks:
+          type: string
+          example: Present in morning session
+      additionalProperties: true
+
+    AttendanceBulkItem:
+      type: object
+      required:
+        - student_id
+        - status
+      properties:
+        student_id:
+          type: integer
+          example: 1
+        student_code:
+          type: string
+          example: STU-2026001
+        student_name:
+          type: string
+          example: John Doe
+        status:
+          type: string
+          enum: [PRESENT, ABSENT, LATE, HALF_DAY, HOLIDAY, LEAVE, ON_DUTY]
+          example: PRESENT
+
+    AttendanceBulkRequest:
+      type: object
+      required:
+        - date
+        - students
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-08-22"
+        marked_by:
+          type: string
+          example: TEACHER
+        students:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendanceBulkItem'
+
+    AssignmentSubmitRequest:
+      type: object
+      required:
+        - teacherAssignmentId
+      properties:
+        teacherAssignmentId:
+          type: integer
+          example: 1
+        submissionText:
+          type: string
+          example: Attached completed report and code submission for Assignment 1.
+
+    LearningMaterialCreateRequest:
+      type: object
+      required:
+        - title
+        - subject_id
+      properties:
+        title:
+          type: string
+          example: Unit 1 Lecture Notes - Data Structures
+        description:
+          type: string
+          example: Comprehensive lecture slides and code examples on Trees and Graphs.
+        department_id:
+          type: integer
+          example: 1
+        program_id:
+          type: integer
+          example: 1
+        academic_year_id:
+          type: integer
+          example: 1
+        class_id:
+          type: integer
+          example: 1
+        semester_id:
+          type: integer
+          example: 1
+        subject_id:
+          type: integer
+          example: 1
+        material_type:
+          type: string
+          enum: [document, video, presentation, syllabus, notes]
+          example: document
+
+    LearningMaterialUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Unit 1 Lecture Notes - Data Structures (Updated)
+        description:
+          type: string
+          example: Updated slides with extra practice problems.
+        department_id:
+          type: integer
+          example: 1
+        program_id:
+          type: integer
+          example: 1
+        academic_year_id:
+          type: integer
+          example: 1
+        class_id:
+          type: integer
+          example: 1
+        semester_id:
+          type: integer
+          example: 1
+        subject_id:
+          type: integer
+          example: 1
+        material_type:
+          type: string
+          example: document
+
+    SessionStartRequest:
+      type: object
+      required:
+        - routine_entry_id
+      properties:
+        routine_entry_id:
+          type: integer
+          example: 101
+        attendance_date:
+          type: string
+          format: date
+          example: "2026-08-22"
+
+    SessionSubmitStudentItem:
+      type: object
+      required:
+        - student_id
+        - attendance_status
+      properties:
+        student_id:
+          type: integer
+          example: 1
+        attendance_status:
+          type: string
+          enum: [PRESENT, ABSENT]
+          example: PRESENT
+
+    SessionSubmitRequest:
+      type: object
+      required:
+        - attendance_session_id
+        - students
+      properties:
+        attendance_session_id:
+          type: integer
+          example: 1
+        students:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionSubmitStudentItem'
+
+    CorrectionSubmitItem:
+      type: object
+      required:
+        - student_id
+        - attendance_status
+        - correction_reason
+      properties:
+        student_attendance_id:
+          type: integer
+          example: 10
+        student_id:
+          type: integer
+          example: 1
+        attendance_status:
+          type: string
+          enum: [PRESENT, ABSENT]
+          example: PRESENT
+        correction_reason:
+          type: string
+          example: Student was present in lab session; initially marked absent by mistake.
+
+    CorrectionSubmitRequest:
+      type: object
+      required:
+        - attendance_session_id
+        - corrections
+      properties:
+        attendance_session_id:
+          type: integer
+          example: 1
+        corrections:
+          type: array
+          items:
+            $ref: '#/components/schemas/CorrectionSubmitItem'
+
+    CorrectionSingleStudentRequest:
+      type: object
+      required:
+        - attendance_status
+        - correction_reason
+      properties:
+        attendance_status:
+          type: string
+          enum: [PRESENT, ABSENT]
+          example: PRESENT
+        correction_reason:
+          type: string
+          example: Student was present; correction approved after verification.
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns health status of the student service.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Service is healthy
+
+  /api/student/ready/{tenant}:
+    get:
+      tags:
+        - Health
+      summary: Database readiness check for tenant
+      description: Verifies database connectivity and readiness breaker status for the specified tenant.
+      parameters:
+        - in: path
+          name: tenant
+          required: true
+          schema:
+            type: string
+          description: Tenant name (e.g. demo)
+          example: demo
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: READY
+        '500':
+          description: Service is not ready
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: NOT READY
+
+  /api/student:
+    get:
+      tags:
+        - Students
+      summary: Get all students
+      description: Lists all students in the tenant.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Students fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/search:
+    get:
+      tags:
+        - Students
+      summary: Search students with filters
+      description: Search students by query, roll number, student name, email, department, class, academic year, or status.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+          description: General search keyword
+          example: John
+        - in: query
+          name: roll_number
+          schema:
+            type: string
+          description: Filter by roll number
+          example: "CS2026001"
+        - in: query
+          name: student_name
+          schema:
+            type: string
+          description: Filter by student name
+          example: "John Doe"
+        - in: query
+          name: email
+          schema:
+            type: string
+          description: Filter by student email
+          example: "john.doe@example.com"
+        - in: query
+          name: department_id
+          schema:
+            type: integer
+          description: Filter by department ID
+          example: 1
+        - in: query
+          name: class_id
+          schema:
+            type: integer
+          description: Filter by class ID
+          example: 1
+        - in: query
+          name: academic_year
+          schema:
+            type: string
+          description: Filter by academic year name
+          example: "2026-2027"
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Filter by status
+          example: active
+      responses:
+        '200':
+          description: Student search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/statistics:
+    get:
+      tags:
+        - Students
+      summary: Get student statistics
+      description: Returns overall student statistics (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Statistics fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Admin role required
+
+  /api/student/payment-lookup:
+    get:
+      tags:
+        - Students
+      summary: Lookup student details for payment
+      description: Lookup student academic and fee payment records by student_id or university_registration_number and payment_type_id.
+      security:
+        - tenantHeader: []
+      parameters:
+        - in: query
+          name: identifier
+          required: true
+          schema:
+            type: string
+          description: Student ID code or University Registration Number
+          example: "STU-2026001"
+        - in: query
+          name: lookupType
+          required: false
+          schema:
+            type: string
+            enum: [student_id, registration]
+            default: student_id
+          description: Type of identifier provided
+          example: student_id
+        - in: query
+          name: paymentTypeId
+          required: true
+          schema:
+            type: integer
+          description: Payment type ID
+          example: 1
+      responses:
+        '200':
+          description: Student payment details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing parameters
+        '404':
+          description: Student or payment type not found
+
+  /api/student/by-student-id/{student_id}:
+    get:
+      tags:
+        - Students
+      summary: Get student by student code/ID string
+      description: Returns student record matching the string student code (e.g. STU-2026001).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: student_id
+          required: true
+          schema:
+            type: string
+          description: Student string identifier code
+          example: "STU-2026001"
+      responses:
+        '200':
+          description: Student fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Student not found
+
+  /api/student/by-department/{department_id}:
+    get:
+      tags:
+        - Students
+      summary: Get students by department ID
+      description: Lists all students belonging to the specified department.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: department_id
+          required: true
+          schema:
+            type: integer
+          description: Department ID
+          example: 1
+      responses:
+        '200':
+          description: Students fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/by-class:
+    get:
+      tags:
+        - Students
+      summary: Get students by class, program, and academic year
+      description: Lists students enrolled in a specific class and program combination.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: classId
+          required: false
+          schema:
+            type: integer
+          description: Class ID
+          example: 1
+        - in: query
+          name: programId
+          required: false
+          schema:
+            type: integer
+          description: Program ID
+          example: 1
+        - in: query
+          name: academicYearId
+          required: false
+          schema:
+            type: integer
+          description: Academic Year ID
+          example: 1
+      responses:
+        '200':
+          description: Students fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/by-academic-year/{academic_year_id}:
+    get:
+      tags:
+        - Students
+      summary: Get students by academic year ID
+      description: Lists students for a given academic year.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: academic_year_id
+          required: true
+          schema:
+            type: integer
+          description: Academic Year ID
+          example: 1
+      responses:
+        '200':
+          description: Students fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/details:
+    get:
+      tags:
+        - Students
+      summary: Get student details by email
+      description: Fetch student details by email query parameter.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+          description: Student email address
+          example: "john.doe@example.com"
+      responses:
+        '200':
+          description: Student details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Email not provided
+        '401':
+          description: Unauthorized
+        '404':
+          description: Student not found
+
+  /api/student/me:
+    get:
+      tags:
+        - Students
+      summary: Get authenticated student profile bundle
+      description: Returns the complete student profile bundle for the logged-in student (Requires student role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Complete student profile fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Student role required
+
+  /api/student/me/contact:
+    get:
+      tags:
+        - Students
+      summary: Get authenticated student contact information
+      description: Returns address, phone, and guardian contact details for the logged-in student (Requires student role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Contact information fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/student/me/academics:
+    get:
+      tags:
+        - Students
+      summary: Get authenticated student academic details
+      description: Returns degree, program, department, and assigned subjects for the logged-in student (Requires student role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Academic details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/student/me/details:
+    get:
+      tags:
+        - Students
+      summary: Get authenticated student record details
+      description: Returns mapped student record for the logged-in student (Requires student role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Student details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/student/me/dashboard:
+    get:
+      tags:
+        - Students
+      summary: Get authenticated student dashboard summary
+      description: Returns aggregated dashboard metrics, attendance rates, routine summaries, and assignments (Requires student role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Student dashboard fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/student/{id}/contact:
+    get:
+      tags:
+        - Students
+      summary: Get student contact by student ID
+      description: Returns contact information for a specific student ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Student ID (Primary Key)
+          example: 1
+      responses:
+        '200':
+          description: Contact information fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid student ID
+        '401':
+          description: Unauthorized
+
+  /api/student/{id}/academics:
+    get:
+      tags:
+        - Students
+      summary: Get student academic information by student ID
+      description: Returns academic details and subject lists for a specific student ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Student ID (Primary Key)
+          example: 1
+      responses:
+        '200':
+          description: Academic details fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid student ID
+        '401':
+          description: Unauthorized
+
+  /api/student/{id}/profile:
+    get:
+      tags:
+        - Students
+      summary: Get student core profile by ID
+      description: Returns core biographical profile for a specific student ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Student ID (Primary Key)
+          example: 1
+      responses:
+        '200':
+          description: Student core profile fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid student ID
+        '401':
+          description: Unauthorized
+
+  /api/student/{id}:
+    get:
+      tags:
+        - Students
+      summary: Get student by ID
+      description: Returns student record by database ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Student ID (Primary Key)
+          example: 1
+      responses:
+        '200':
+          description: Student fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid student ID
+        '401':
+          description: Unauthorized
+        '404':
+          description: Student not found
+    put:
+      tags:
+        - Students
+      summary: Update student by ID
+      description: Update student profile details (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Student ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentUpdateRequest'
+      responses:
+        '200':
+          description: Student updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    patch:
+      tags:
+        - Students
+      summary: Partial update student by ID
+      description: Partially update student details (Requires admin or teacher role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Student ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentUpdateRequest'
+      responses:
+        '200':
+          description: Student updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Validation error
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    delete:
+      tags:
+        - Students
+      summary: Delete student by ID
+      description: Delete student record by ID (Requires admin role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Student ID
+          example: 1
+      responses:
+        '200':
+          description: Student deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Student not found
+
+  /api/student/attendance:
+    post:
+      tags:
+        - Attendance
+      summary: Mark attendance for a single student
+      description: Records daily attendance for an individual student.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceMarkRequest'
+      responses:
+        '201':
+          description: Attendance marked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Empty or invalid request body
+        '401':
+          description: Unauthorized
+
+  /api/student/attendance/bulk:
+    post:
+      tags:
+        - Attendance
+      summary: Bulk mark student attendance
+      description: Marks or overwrites attendance for a list of students on a specific date.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceBulkRequest'
+      responses:
+        '200':
+          description: Attendance marked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Invalid payload
+        '401':
+          description: Unauthorized
+
+  /api/student/attendance/upload:
+    post:
+      tags:
+        - Attendance
+      summary: Upload attendance sheet image for AI/OCR extraction
+      description: Upload an image file (JPG, PNG, WebP up to 50MB) of a physical attendance sheet. AI-ML service processes OCR and automatically logs records into the database.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Attendance sheet image file (max 50MB)
+                uploaded_by:
+                  type: string
+                  example: "teacher1"
+                session_id:
+                  type: integer
+                  example: 1
+                class_id:
+                  type: integer
+                  example: 1
+      responses:
+        '201':
+          description: File uploaded and attendance processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: No file uploaded or invalid file type
+        '413':
+          description: File too large (maximum size 50MB)
+        '502':
+          description: AI-ML OCR processing failure or service offline
+
+  /api/student/attendance/report:
+    get:
+      tags:
+        - Attendance
+      summary: Get student attendance report
+      description: Generates attendance records report filtered by a single date (YYYY-MM-DD) or month and year.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          description: Target date (YYYY-MM-DD)
+          example: "2026-08-22"
+        - in: query
+          name: month
+          schema:
+            type: integer
+          description: Target month number (1-12)
+          example: 8
+        - in: query
+          name: year
+          schema:
+            type: integer
+          description: Target year (YYYY)
+          example: 2026
+      responses:
+        '200':
+          description: Report fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Missing date or month & year parameters
+
+  /api/student/attendance/summary:
+    get:
+      tags:
+        - Attendance
+      summary: Get student attendance summary
+      description: Returns attendance summary with present/absent stats across students in a class or routine entry.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          example: "2026-08-01"
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          example: "2026-08-31"
+        - in: query
+          name: classId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: programId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: academicYearId
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: routineEntryId
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Attendance summary fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/attendance/my-records:
+    get:
+      tags:
+        - Attendance
+      summary: Get authenticated student attendance records
+      description: Returns personal attendance records and overall percentage for the logged-in student (Requires student role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: studentId
+          required: true
+          schema:
+            type: integer
+          description: Student ID (Primary Key)
+          example: 1
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          example: "2026-08-01"
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          example: "2026-08-31"
+        - in: query
+          name: month
+          schema:
+            type: integer
+          example: 8
+        - in: query
+          name: year
+          schema:
+            type: integer
+          example: 2026
+      responses:
+        '200':
+          description: Attendance records fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Student ID required
+        '401':
+          description: Unauthorized
+
+  /api/student/session-attendance/start:
+    post:
+      tags:
+        - Session Attendance
+      summary: Start or fetch an attendance session
+      description: Initializes or fetches an OPEN/SUBMITTED session for a routine entry on a given date (Authenticated teacher must teach this routine entry).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionStartRequest'
+      responses:
+        '200':
+          description: Attendance session initialized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Break period or invalid routine entry
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Teacher not authorized for this routine entry
+        '404':
+          description: Routine entry not found
+
+  /api/student/session-attendance/students:
+    get:
+      tags:
+        - Session Attendance
+      summary: Fetch students roster for an attendance session
+      description: Lists all students in the class with their current attendance status in the specified session.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: session_id
+          schema:
+            type: integer
+          description: Attendance session ID
+          example: 1
+        - in: query
+          name: routine_entry_id
+          schema:
+            type: integer
+          description: Routine entry ID
+          example: 101
+        - in: query
+          name: attendance_date
+          schema:
+            type: string
+            format: date
+          description: Target date (YYYY-MM-DD)
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Session students fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: session_id or routine_entry_id is required
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Session or routine entry not found
+
+  /api/student/session-attendance/submit:
+    post:
+      tags:
+        - Session Attendance
+      summary: Bulk submit attendance for session
+      description: Records PRESENT/ABSENT status for all students in the session and locks the session as SUBMITTED.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionSubmitRequest'
+      responses:
+        '200':
+          description: Session attendance submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request or session already locked
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Session not found
+
+  /api/student/session-attendance/teacher-subjects:
+    get:
+      tags:
+        - Session Attendance
+      summary: Get distinct subjects taught by authenticated teacher
+      description: Returns list of distinct subjects and class associations configured in the teacher's active routine.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Teacher subjects retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Teacher profile not found
+
+  /api/student/session-attendance/teacher-subject-stats:
+    get:
+      tags:
+        - Session Attendance
+      summary: Get subject-wise student attendance statistics & session heatmap
+      description: Returns student attendance percentages and detailed session-by-session matrix for a subject and date range.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: subject_id
+          schema:
+            type: integer
+          description: Subject ID
+          example: 1
+        - in: query
+          name: routine_entry_id
+          schema:
+            type: integer
+          description: Routine entry ID
+          example: 101
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          description: Range start date (YYYY-MM-DD)
+          example: "2026-08-01"
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          description: Range end date (YYYY-MM-DD)
+          example: "2026-08-31"
+      responses:
+        '200':
+          description: Subject attendance statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: subject_id or routine_entry_id is required
+        '401':
+          description: Unauthorized
+        '404':
+          description: Teacher profile not found
+
+  /api/student/session-attendance/correction/sessions:
+    get:
+      tags:
+        - Session Attendance
+      summary: Get teacher's editable submitted sessions for a date
+      description: Lists submitted sessions that are still within the 3-day correction deadline window.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          description: Attendance date (YYYY-MM-DD)
+          example: "2026-08-22"
+      responses:
+        '200':
+          description: Editable sessions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/student/session-attendance/correction/sessions/{attendanceSessionId}:
+    get:
+      tags:
+        - Session Attendance
+      summary: Load attendance roster for session correction
+      description: Returns session details, deadline, and individual student attendance records with reasons for correction.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: attendanceSessionId
+          required: true
+          schema:
+            type: integer
+          description: Attendance session ID
+          example: 1
+      responses:
+        '200':
+          description: Session attendance details loaded for correction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Session not eligible for correction or deadline expired
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Session not found
+
+  /api/student/session-attendance/correction/submit:
+    post:
+      tags:
+        - Session Attendance
+      summary: Submit batch attendance corrections for a session
+      description: Updates multiple student attendance records with mandatory correction reasons within the 3-day window.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectionSubmitRequest'
+      responses:
+        '200':
+          description: Attendance corrections saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request - Missing reasons or deadline expired
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/student/session-attendance/correction/{studentAttendanceId}:
+    patch:
+      tags:
+        - Session Attendance
+      summary: Correct a single student attendance record
+      description: Updates attendance status for a single student record with a mandatory correction reason.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: studentAttendanceId
+          required: true
+          schema:
+            type: integer
+          description: Student attendance primary key ID
+          example: 10
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CorrectionSingleStudentRequest'
+      responses:
+        '200':
+          description: Student attendance record corrected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request or deadline expired
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Record not found
+
+  /api/student/assignments/stats:
+    get:
+      tags:
+        - Assignments
+      summary: Get student assignment statistics & completion chart
+      description: Returns counts of total, pending, submitted, and overdue assignments for the logged-in student along with completion rates.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Assignments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/assignments/filter:
+    get:
+      tags:
+        - Assignments
+      summary: Filter student assignments
+      description: Lists student assignments filtered by department ID and completion status (Submitted, Overdue, Pending).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: departmentId
+          schema:
+            type: integer
+          description: Filter by department ID
+          example: 1
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [Submitted, Overdue, Pending]
+          description: Filter by submission status
+          example: Pending
+      responses:
+        '200':
+          description: Filtered assignments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/assignments/submit:
+    post:
+      tags:
+        - Assignments
+      summary: Submit assignment with optional file upload
+      description: Submits student solution text and/or file attachment for a teacher assignment.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - teacherAssignmentId
+              properties:
+                teacherAssignmentId:
+                  type: integer
+                  example: 1
+                submissionText:
+                  type: string
+                  example: Attached my project report
+                assignmentFile:
+                  type: string
+                  format: binary
+                  description: Assignment submission document (PDF, DOCX, etc.)
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentSubmitRequest'
+      responses:
+        '201':
+          description: Assignment submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Bad request
+        '401':
+          description: Unauthorized
+
+  /api/student/assignments/submitted/{id}:
+    get:
+      tags:
+        - Assignments
+      summary: View submitted assignment details
+      description: Returns student submission details, marks, teacher feedback, and direct file URLs.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Submission ID
+          example: 1
+      responses:
+        '200':
+          description: Submitted assignment fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Submission ID required
+        '401':
+          description: Unauthorized
+        '404':
+          description: Submitted assignment not found
+
+  /api/student/assignments/{id}:
+    get:
+      tags:
+        - Assignments
+      summary: Get assignment details by ID
+      description: Returns teacher assignment description, due date/time, and attachment URLs.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+      responses:
+        '200':
+          description: Assignment fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: Assignment ID required
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+
+  /api/student/assignments/{assignmentId}/files/{filename}:
+    get:
+      tags:
+        - Assignments
+      summary: Serve assignment submission file
+      description: Direct public file download / viewing endpoint for student assignment submission files.
+      parameters:
+        - in: path
+          name: assignmentId
+          required: true
+          schema:
+            type: integer
+          description: Assignment ID
+          example: 1
+        - in: path
+          name: filename
+          required: true
+          schema:
+            type: string
+          description: Uploaded file name on disk
+          example: "submission-doc-1.pdf"
+      responses:
+        '200':
+          description: File returned as stream
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found on server
+
+  /api/student/learning-materials/my-learning-materials:
+    get:
+      tags:
+        - Learning Materials
+      summary: Get learning materials for authenticated student
+      description: Returns list of learning materials relevant to the logged-in student's department, program, class, and semester (Requires student role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Learning materials fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/student/learning-materials/my-learning-materials/{id}:
+    get:
+      tags:
+        - Learning Materials
+      summary: Get single learning material by ID for student
+      description: Returns learning material details if the logged-in student is authorized for this material (Requires student role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Learning material ID
+          example: 1
+      responses:
+        '200':
+          description: Learning material fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Unauthorized access to this material
+        '404':
+          description: Learning material not found
+
+  /api/student/learning-materials:
+    post:
+      tags:
+        - Learning Materials
+      summary: Upload learning material
+      description: Upload new learning material file and notify students (Requires admin or teacher role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - title
+                - subject_id
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Material file (PDF, PPTX, MP4, etc.)
+                title:
+                  type: string
+                  example: Lecture 1 - Introduction to Trees
+                description:
+                  type: string
+                  example: Notes covering tree traversals and BST
+                department_id:
+                  type: integer
+                  example: 1
+                program_id:
+                  type: integer
+                  example: 1
+                academic_year_id:
+                  type: integer
+                  example: 1
+                class_id:
+                  type: integer
+                  example: 1
+                semester_id:
+                  type: integer
+                  example: 1
+                subject_id:
+                  type: integer
+                  example: 1
+                material_type:
+                  type: string
+                  enum: [document, video, presentation, syllabus, notes]
+                  example: document
+      responses:
+        '201':
+          description: Learning material uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '400':
+          description: File, title, or subject_id is missing
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    get:
+      tags:
+        - Learning Materials
+      summary: Get all learning materials
+      description: Lists learning materials with optional filters (Requires admin or teacher role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: department_id
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: program_id
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: academic_year_id
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: class_id
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: semester_id
+          schema:
+            type: integer
+          example: 1
+        - in: query
+          name: subject_id
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Learning materials fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/student/learning-materials/{id}/download:
+    get:
+      tags:
+        - Learning Materials
+      summary: Download learning material file
+      description: Downloads the attached learning material file with proper content disposition.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Learning material ID
+          example: 1
+      responses:
+        '200':
+          description: File downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+        '404':
+          description: Material or file not found on server
+
+  /api/student/learning-materials/{id}:
+    get:
+      tags:
+        - Learning Materials
+      summary: Get learning material by ID
+      description: Returns single learning material record (Requires admin or teacher role).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Learning material ID
+          example: 1
+      responses:
+        '200':
+          description: Learning material fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Learning material not found
+    put:
+      tags:
+        - Learning Materials
+      summary: Update learning material
+      description: Updates metadata and/or replaces the file for an existing learning material (Requires creator teacher or admin).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Learning material ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                  example: Lecture 1 - Introduction to Trees (Updated)
+                description:
+                  type: string
+                  example: Updated slides
+                department_id:
+                  type: integer
+                  example: 1
+                program_id:
+                  type: integer
+                  example: 1
+                academic_year_id:
+                  type: integer
+                  example: 1
+                class_id:
+                  type: integer
+                  example: 1
+                semester_id:
+                  type: integer
+                  example: 1
+                subject_id:
+                  type: integer
+                  example: 1
+                material_type:
+                  type: string
+                  example: document
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearningMaterialUpdateRequest'
+      responses:
+        '200':
+          description: Learning material updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Ownership required
+        '404':
+          description: Learning material not found
+    delete:
+      tags:
+        - Learning Materials
+      summary: Delete learning material
+      description: Permanently deletes learning material and removes its file from disk (Requires creator teacher or admin).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Learning material ID
+          example: 1
+      responses:
+        '200':
+          description: Learning material deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Ownership required
+        '404':
+          description: Learning material not found
+
+  /api/student/notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get user notifications
+      description: Returns recent in-app notifications and unread count for the authenticated user.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notifications fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/notifications/read-all:
+    put:
+      tags:
+        - Notifications
+      summary: Mark all notifications as read
+      description: Marks all active notifications as read for the authenticated user.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/notifications/{id}/read:
+    put:
+      tags:
+        - Notifications
+      summary: Mark single notification as read
+      description: Marks a specific notification as read.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Notification ID
+          example: 1
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/notifications/clear-all:
+    delete:
+      tags:
+        - Notifications
+      summary: Clear all notifications
+      description: Deletes all in-app notifications for the authenticated user.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications cleared
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/notifications/{id}:
+    delete:
+      tags:
+        - Notifications
+      summary: Delete single notification
+      description: Deletes a specific notification by ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: Notification ID
+          example: 1
+      responses:
+        '200':
+          description: Notification deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/hierarchy/departments:
+    get:
+      tags:
+        - Hierarchy
+      summary: Get all departments
+      description: Returns list of departments with code, name, parent_id, and hierarchy level.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Departments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/hierarchy/programs:
+    get:
+      tags:
+        - Hierarchy
+      summary: Get programs
+      description: Returns list of academic programs optionally filtered by department ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: department_id
+          schema:
+            type: integer
+          description: Optional department ID filter
+          example: 1
+      responses:
+        '200':
+          description: Programs fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/hierarchy/classes:
+    get:
+      tags:
+        - Hierarchy
+      summary: Get all classes
+      description: Returns list of all classes in the college.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Classes fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/hierarchy/semesters:
+    get:
+      tags:
+        - Hierarchy
+      summary: Get semesters
+      description: Returns semesters optionally filtered by program ID and class ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: program_id
+          schema:
+            type: integer
+          description: Optional program ID filter
+          example: 1
+        - in: query
+          name: class_id
+          schema:
+            type: integer
+          description: Optional class ID filter
+          example: 1
+      responses:
+        '200':
+          description: Semesters fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/hierarchy/subjects:
+    get:
+      tags:
+        - Hierarchy
+      summary: Get subjects
+      description: Returns list of subjects optionally filtered by department ID.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: department_id
+          schema:
+            type: integer
+          description: Optional department ID filter
+          example: 1
+      responses:
+        '200':
+          description: Subjects fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/hierarchy/academic-years:
+    get:
+      tags:
+        - Hierarchy
+      summary: Get academic years
+      description: Returns list of academic years ordered by start date.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Academic years fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/departments/master:
+    get:
+      tags:
+        - Department Hierarchy
+      summary: Get master departments
+      description: Returns top-level master departments (where parent_id is null).
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Master departments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/departments/master/{masterId}/child:
+    get:
+      tags:
+        - Department Hierarchy
+      summary: Get child departments by master department ID
+      description: Returns level 2 child departments under a master department.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: masterId
+          required: true
+          schema:
+            type: integer
+          description: Master department ID
+          example: 1
+      responses:
+        '200':
+          description: Child departments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
+
+  /api/student/departments/child/{childId}/subjects:
+    get:
+      tags:
+        - Department Hierarchy
+      summary: Get active subjects under child department
+      description: Returns active subjects mapped to a child department.
+      security:
+        - tenantHeader: []
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: childId
+          required: true
+          schema:
+            type: integer
+          description: Child department ID
+          example: 2
+      responses:
+        '200':
+          description: Subjects fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+        '401':
+          description: Unauthorized
