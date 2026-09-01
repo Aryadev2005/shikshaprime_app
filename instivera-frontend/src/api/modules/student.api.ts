@@ -16,9 +16,11 @@ const client = apiClient.getClient();
 
 export const studentApi = {
   async search(query: string): Promise<StudentSearchResult[]> {
-    const response = await client.get<ApiResponse<StudentSearchResult[]>>('/student/search', {
-      params: { q: query },
-    });
+    // searchStudents reads `query`, not `q` (studentController.ts:376).
+    const response = await client.get<ApiResponse<StudentSearchResult[]>>(
+      '/api/student/search',
+      { params: { query } },
+    );
     return response.data.data;
   },
 };

@@ -51,6 +51,71 @@ interface RawAssignment {
   submissions?: RawSubmission[];
 }
 
+// ── student-service shapes ───────────────────────────────────────────────────
+// student-service returns flat, pre-statused rows rather than the nested
+// teacher_assignments model rows the teacher endpoints emit.
+
+interface RawStudentAssignmentRow {
+  id: number;
+  title: string;
+  subject_id?: number;
+  subject_name?: string | null;
+  type?: string;
+  due_date?: string;
+  assignment_submission_id?: number | null;
+  status?: 'Submitted' | 'Overdue' | 'Pending' | string;
+}
+
+interface RawStudentStats {
+  total: number;
+  pending: number;
+  submitted: number;
+  overdue: number;
+  graded: number;
+  avgGrade: number | null;
+}
+
+interface RawStudentAssignmentDetail {
+  assignment_title?: string;
+  assignment_description?: string;
+  due_date?: string;
+  due_time?: string;
+  allow_late_submissions?: number | boolean;
+  attachments?: Array<{ attachment_id: number; file_name: string; file_url: string | null }>;
+}
+
+const STUDENT_STATUS: Record<string, Assignment['status']> = {
+  Submitted: 'SUBMITTED',
+  Overdue: 'OVERDUE',
+  Pending: 'PENDING',
+};
+
+const toStudentAssignment = (raw: RawStudentAssignmentRow): Assignment => ({
+  id: String(raw.id),
+  title: raw.title,
+  subjectName: raw.subject_name ?? '',
+  dueDate: raw.due_date ?? '',
+  status: STUDENT_STATUS[raw.status ?? ''] ?? 'PENDING',
+  progress: raw.assignment_submission_id ? 100 : 0,
+  type: raw.type,
+});
+
+// The detail endpoint carries no subject, class, marks or submission state —
+// only title/description/due date/attachments. See INTEGRATION_LOG.md.
+const toStudentAssignmentDetail = (
+  id: string,
+  raw: RawStudentAssignmentDetail,
+): AssignmentDetail => ({
+  id,
+  title: raw?.assignment_title ?? '',
+  description: raw?.assignment_description,
+  subjectName: '',
+  dueDate: raw?.due_date ?? '',
+  status: raw?.due_date && new Date(raw.due_date) < new Date() ? 'OVERDUE' : 'PENDING',
+  fileUrl: raw?.attachments?.[0]?.file_url ?? undefined,
+  allowLateSubmissions: !!raw?.allow_late_submissions,
+});
+
 const deriveStatus = (raw: RawAssignment, mySubmission?: RawSubmission): Assignment['status'] => {
   if (mySubmission?.status === 'graded') return 'GRADED';
   if (mySubmission?.status === 'submitted') return 'SUBMITTED';
@@ -106,32 +171,66 @@ const toAssignmentDetail = (raw: RawAssignment, studentView: boolean): Assignmen
 export const assignmentApi = {
   async getAssignments(): Promise<AssignmentListResponse> {
     const studentView = isStudent();
-    const path = studentView ? '/assignments/student/list' : '/assignments/teacher/list';
-    const response = await client.get<ApiResponse<RawAssignment[]>>(path);
-    const raw = response.data.data;
-    const assignments = raw.map((a) => toAssignment(a, studentView));
 
-    if (!studentView) return { assignments };
+    if (studentView) {
+      // getStudentAssignmentsAndStats returns { assignments, stats, chart },
+      // with flat rows and a server-computed status — not a bare array.
+      const response = await client.get<
+        ApiResponse<{ assignments: RawStudentAssignmentRow[]; stats: RawStudentStats }>
+      >('/api/student/assignments/stats');
 
-    const counters = {
-      total: assignments.length,
-      pending: assignments.filter((a) => a.status === 'PENDING').length,
-      submitted: assignments.filter((a) => a.status === 'SUBMITTED').length,
-      graded: assignments.filter((a) => a.status === 'GRADED').length,
-    };
-    return { counters, assignments };
+      const body = response.data.data;
+      const assignments = (body?.assignments ?? []).map(toStudentAssignment);
+      const stats = body?.stats;
+
+      return {
+        counters: {
+          total: stats?.total ?? assignments.length,
+          pending: stats?.pending ?? 0,
+          submitted: stats?.submitted ?? 0,
+          // The stats query hardcodes graded: 0 — it does not distinguish
+          // graded from submitted. See INTEGRATION_LOG.md.
+          graded: stats?.graded ?? 0,
+        },
+        assignments,
+      };
+    }
+
+    // TODO(teacher-service phase): still points at the old gateway path.
+    const response = await client.get<ApiResponse<RawAssignment[]>>(
+      '/assignments/teacher/list',
+    );
+    return { assignments: (response.data.data ?? []).map((a) => toAssignment(a, false)) };
   },
 
   async getAssignmentById(id: string): Promise<AssignmentDetail> {
     const studentView = isStudent();
-    const path = studentView ? `/assignments/student/${id}` : `/assignments/teacher/${id}`;
-    const response = await client.get<ApiResponse<RawAssignment>>(path);
-    return toAssignmentDetail(response.data.data, studentView);
+
+    if (studentView) {
+      const response = await client.get<ApiResponse<RawStudentAssignmentDetail>>(
+        `/api/student/assignments/${id}`,
+      );
+      return toStudentAssignmentDetail(id, response.data.data);
+    }
+
+    // TODO(teacher-service phase): still points at the old gateway path.
+    const response = await client.get<ApiResponse<RawAssignment>>(
+      `/assignments/teacher/${id}`,
+    );
+    return toAssignmentDetail(response.data.data, false);
   },
 
   async submitAssignment(id: string, formData: FormData): Promise<SubmitAssignmentResult> {
-    const response = await client.post<ApiResponse<{ submission: RawSubmission; created: boolean }>>(
-      `/assignments/student/${id}/submit`,
+    // The assignment id travels in the body as `teacherAssignmentId`, not in
+    // the path; the file part must be named `assignmentFile`, which the
+    // calling screen already does.
+    formData.append('teacherAssignmentId', id);
+
+    // submitAssignment responds with { status, message } and, when a file was
+    // attached, data.uploadedFile — it never returns the submission row, so
+    // there is no submission id to report back.
+    await client.post<ApiResponse<unknown>>(
+      '/api/student/assignments/submit',
       formData,
       {
         // React Native's native XHR sets the correct multipart boundary;
@@ -139,12 +238,11 @@ export const assignmentApi = {
         headers: { 'Content-Type': 'multipart/form-data' },
       },
     );
-    const { submission } = response.data.data;
+
     return {
-      submissionId: String(submission.id),
       assignmentId: id,
-      submissionDate: submission.submitted_at ?? new Date().toISOString(),
-      status: submission.status ?? 'submitted',
+      submissionDate: new Date().toISOString(),
+      status: 'submitted',
     };
   },
 

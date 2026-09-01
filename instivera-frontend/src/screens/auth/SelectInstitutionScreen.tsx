@@ -32,15 +32,18 @@ export const SelectInstitutionScreen: React.FC<Props> = ({ navigation }) => {
     // Persist immediately (not just on login submit) so any pre-login flow
     // that reads the stored tenant — e.g. "Track existing application" —
     // has a valid x-tenant to send.
+    // identity-service has no school/college column on `tenants`, so `type`
+    // can be absent; 'college' matches the default LoginScreen already uses.
+    const type = institution.type ?? 'college';
     await setSelectedInstitution({
       tenant: institution.slug,
       name: institution.name,
-      type: institution.type,
+      type,
     });
     navigation.navigate('Login', {
       tenant: institution.slug,
       institutionName: institution.name,
-      institutionType: institution.type,
+      institutionType: type,
     });
   };
 

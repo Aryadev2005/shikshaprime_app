@@ -1,12 +1,17 @@
+/** The user object identity-service returns from /authenticate-user. */
 export interface MobileUser {
-  id: string;
+  user_code: string;
+  username: string;
   name: string;
-  firstName: string;
-  lastName: string;
   role: string;
+  user_type: string;
   email: string;
-  avatarInitials: string;
-  userCode: string;
+  phone: string;
+  institute_code: string;
+  access_code: string;
+  is_email_verified: 0 | 1;
+  is_phone_verified: 0 | 1;
+  institution?: unknown;
 }
 
 export interface ApiResponse<T = any> {
@@ -40,9 +45,10 @@ export interface VerifyOtpRequest {
   otp: string;
 }
 
+// verify-email-otp only confirms the code; it does not issue a token.
 export interface VerifyOtpResponse {
-  user: MobileUser;
-  token: string;
+  email: string;
+  verified: boolean;
 }
 
 export interface ValidateEmailRequest {

@@ -124,10 +124,23 @@ router.patch("/:id", requireAuth, requireRole("admin", "teacher"), updateStudent
 router.delete("/:id", requireAuth, requireRole("admin"), deleteStudent);
 
 // Attendance routes
-router.post("/attendance", markAttendance);
-router.post("/attendance/bulk", bulkMarkAttendance);
-router.post("/attendance/upload", upload.single("file"), handleMulterError, uploadAttendanceFile);
-router.get("/attendance/report", getAttendanceReport);
+// These write paths were previously unauthenticated. bulkMarkAttendance
+// destroys every attendance row for the given students and date before
+// re-inserting, so an anonymous caller could wipe and rewrite a class's
+// attendance history. Marking attendance is a staff action.
+const ATTENDANCE_STAFF_ROLES = ["teacher", "admin", "superadmin", "super_admin"] as const;
+
+router.post("/attendance", requireAuth, requireRole(...ATTENDANCE_STAFF_ROLES), markAttendance);
+router.post("/attendance/bulk", requireAuth, requireRole(...ATTENDANCE_STAFF_ROLES), bulkMarkAttendance);
+router.post(
+  "/attendance/upload",
+  requireAuth,
+  requireRole(...ATTENDANCE_STAFF_ROLES),
+  upload.single("file"),
+  handleMulterError,
+  uploadAttendanceFile
+);
+router.get("/attendance/report", requireAuth, getAttendanceReport);
 router.get("/attendance/summary", requireAuth, getStudentAttendanceSummary);
 router.get("/attendance/my-records", requireAuth, requireRole("student"), getMyAttendanceRecords);
 

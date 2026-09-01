@@ -51,7 +51,11 @@ export interface AssignmentDetail {
 }
 
 export interface SubmitAssignmentResult {
-  submissionId: string;
+  /**
+   * student-service's submitAssignment returns only { status, message }
+   * (plus uploadedFile), so no submission id comes back on submit.
+   */
+  submissionId?: string;
   assignmentId: string;
   submissionDate: string;
   status: string;

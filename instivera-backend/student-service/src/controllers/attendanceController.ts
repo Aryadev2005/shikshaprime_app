@@ -13,6 +13,23 @@ import FormData from "form-data";
 
 const STUDENT_UUID_NAMESPACE = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
 
+/**
+ * Resolves the caller's own students.id from the auth token.
+ *
+ * The my-records endpoint used to take `studentId` straight from the query
+ * string, so any authenticated student could read any other student's
+ * attendance by changing one parameter. Mirrors getAuthorizedStudentTarget in
+ * studentController.ts, which the sibling /me/* routes already use.
+ */
+async function getAuthenticatedStudentId(req: any): Promise<number | null> {
+  const email = String(req.user?.email || "").trim();
+  if (!email) return null;
+
+  const { Student } = getTenantModels(req.tenant);
+  const student = await Student.findOne({ where: { email }, raw: true });
+  return student ? Number((student as any).id) : null;
+}
+
 export async function markAttendance(req, res: Response) {
   try {
     console.log("Attendance POST hit");
@@ -687,10 +704,18 @@ export const bulkMarkAttendance = async (req, res: Response) => {
 
 export const getMyAttendanceRecords = async (req, res: Response) => {
   try {
-    const { studentId, startDate, endDate, month, year } = req.query;
+    const { startDate, endDate, month, year } = req.query;
+
+    // Derived from the token, never from the request — a student may only
+    // read their own attendance. Any `studentId` query param is ignored.
+    const studentId = await getAuthenticatedStudentId(req);
 
     if (!studentId) {
-      return res.status(400).json({ status: 0, data: null, message: "Student ID is required" });
+      return res.status(404).json({
+        status: 0,
+        data: null,
+        message: "No student record is linked to this account"
+      });
     }
 
     let queryStart: any, queryEnd: any;
