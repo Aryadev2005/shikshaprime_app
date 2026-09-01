@@ -67,7 +67,11 @@ export interface AssignmentMetadata {
 }
 
 export interface GradeSubmissionPayload {
-  grade: string;
+  /**
+   * Sent by the grading form but ignored by the backend: teacher-service
+   * derives the letter grade from `marks_obtained` itself.
+   */
+  grade?: string;
   marks_obtained: number;
   feedback?: string;
 }
@@ -80,4 +84,8 @@ export interface CreateAssignmentPayload {
   due_date: string;
   allow_late_submissions?: boolean;
   instructions?: string;
+  /** Required by the backend; CreateAssignmentScreen does not collect either. */
+  type?: 'Assignment' | 'Homework';
+  /** 'HH:mm:ss'. Required by the backend; not collected by the form. */
+  due_time?: string;
 }

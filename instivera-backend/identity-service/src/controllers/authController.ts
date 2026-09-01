@@ -140,15 +140,29 @@ export const verifyEmailOtp = async (req, res: Response, next: NextFunction) => 
 };
 
 export const changePassword = async (req, res: Response, next: NextFunction) => {
-    const { email, newPassword } = req.body;
+    const { email, currentPassword, newPassword } = req.body;
     try {
-        if (!email || !newPassword) {
-            return res.status(400).json({ status: 0, message: 'Email and new password are required' });
+        // The route is `requireAuth`ed, so req.user is the caller's own token.
+        const callerEmail = req.user?.email;
+        if (!callerEmail) {
+            return res.status(401).json({ status: 0, message: 'Authentication required' });
+        }
+
+        if (!newPassword) {
+            return res.status(400).json({ status: 0, message: 'New password is required' });
+        }
+        if (!currentPassword) {
+            return res.status(400).json({ status: 0, message: 'Current password is required' });
+        }
+        // A token is not authority to change *someone else's* password. An
+        // omitted email defaults to the caller; a mismatched one is refused.
+        if (email && String(email).toLowerCase() !== String(callerEmail).toLowerCase()) {
+            return res.status(403).json({ status: 0, message: 'You can only change your own password' });
         }
         if (newPassword.length < 6) {
             return res.status(400).json({ status: 0, message: 'Password must be at least 6 characters' });
         }
-        const result = await authService.changePassword(email, newPassword, req.tenant);
+        const result = await authService.changePassword(callerEmail, currentPassword, newPassword, req.tenant);
         res.status(200).json({
             status: 1,
             data: result,

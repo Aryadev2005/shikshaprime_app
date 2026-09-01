@@ -88,8 +88,10 @@ const RecentRow: React.FC<{ item: RecentPayment }> = ({ item }) => (
         {new Date(item.date).toLocaleDateString('en-IN', {
           day: 'numeric',
           month: 'short',
-        })}{' '}
-        · {item.mode}
+        })}
+        {/* Payment mode is not exposed to students by any endpoint; the
+            separator is dropped rather than printing a dangling "·". */}
+        {item.mode ? ` · ${item.mode}` : ''}
       </Text>
     </View>
     <Text style={styles.recentAmount}>{formatINR(item.amount)}</Text>

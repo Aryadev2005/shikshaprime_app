@@ -17,7 +17,11 @@ export interface BreakdownItem {
 export interface RecentPayment {
   label: string;
   date: string;
-  mode: string;
+  /**
+   * No backend source: `payment_method` lives on `payment_transactions`, which
+   * no student-facing endpoint returns. Undefined until one does.
+   */
+  mode?: string;
   amount: number;
 }
 
@@ -32,10 +36,11 @@ export interface PaymentSummary {
 
 export interface PaymentReceipt {
   id: string;
-  receiptNumber: string;
+  /** See RecentPayment.mode — receipts/modes are not exposed to students. */
+  receiptNumber?: string;
   date: string;
   amount: number;
-  mode: string;
+  mode?: string;
   description: string;
 }
 
@@ -54,6 +59,12 @@ export interface PaymentStatus {
 }
 
 export interface InitiatePaymentInput {
+  /**
+   * A fee-ASSIGNMENT id (`student_fee_assignments.id`), which is what
+   * `POST /api/payment/students/:assignmentId/initiate` takes — not the
+   * `paymentId` that comes back in InitiatePaymentResult. Kept under this name
+   * to match PaymentSummary.primaryPaymentId.
+   */
   paymentId: string;
   amount?: number;
 }

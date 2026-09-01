@@ -11,57 +11,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TOKENS } from '../../theme/tokens';
-import { Pill, Avatar } from '../../components/ui';
+import { Pill } from '../../components/ui';
 import { useTimetable } from '../../hooks/useTimetable';
 import { TimetableEvent } from '../../api/modules/timetable.api';
 import { CalendarStackParamList } from '../../navigation/types';
 
 type Props = NativeStackScreenProps<CalendarStackParamList, 'Calendar'>;
 
-// ─── Static timetable fallback ────────────────────────────────────────────────
-
 type Tone = 'plum' | 'coral' | 'green' | 'amber';
 
-const STATIC_SCHEDULE: TimetableEvent[] = [
-  {
-    time: '09:00',
-    duration: '1h',
-    subject: 'Mathematics',
-    room: 'Room 204',
-    teacher: 'John Doe',
-    classId: 'CLS-1A',
-    tone: 'plum',
-    isActive: true,
-  },
-  {
-    time: '10:30',
-    duration: '1h 30m',
-    subject: 'Physics Lab',
-    room: 'Block C',
-    teacher: 'S. Mehta',
-    classId: 'CLS-2B',
-    tone: 'coral',
-  },
-  {
-    time: '13:00',
-    duration: '1h',
-    subject: 'English Lit',
-    room: 'Room 109',
-    teacher: 'P. Nair',
-    classId: 'CLS-3A',
-    tone: 'green',
-  },
-  {
-    time: '16:00',
-    duration: '—',
-    subject: 'Essay Deadline',
-    room: 'History · Submit',
-    teacher: '',
-    classId: '',
-    tone: 'amber',
-    isDeadline: true,
-  },
-];
 
 // ─── Week strip helpers ───────────────────────────────────────────────────────
 
@@ -150,17 +108,11 @@ const TimeRow: React.FC<{
 
         {!event.isDeadline && (
           <View style={styles.eventFooter}>
-            {/* Overlapping avatars */}
-            <View style={styles.avatarRow}>
-              {['Karan V', 'Tara I', 'Riya M'].map((n, i) => (
-                <View key={i} style={[styles.avatarWrap, { marginLeft: i === 0 ? 0 : -7 }]}>
-                  <Avatar name={n} size={22} ring />
-                </View>
-              ))}
-              <View style={[styles.avatarOverflow, { marginLeft: -7, backgroundColor: '#fff', borderColor: bg }]}>
-                <Text style={styles.avatarOverflowText}>+39</Text>
-              </View>
-            </View>
+            {/* The overlapping student avatars that sat here were three
+                hardcoded names plus a literal "+39" — invented roster data
+                rendered against real timetable rows. No timetable endpoint
+                returns enrolled students, so there is nothing to put back.
+                See INTEGRATION_LOG.md. */}
             <TouchableOpacity
               style={[styles.attendanceBtn, { backgroundColor: c }]}
               onPress={onTakeAttendance}
@@ -184,9 +136,10 @@ export const CalendarScreen: React.FC<Props> = ({ navigation }) => {
   const monday = getMondayOfWeek(selectedDate);
 
   const dateStr = toDateString(selectedDate);
-  const { data: apiEvents } = useTimetable(dateStr);
-  const events: TimetableEvent[] =
-    apiEvents && apiEvents.length > 0 ? apiEvents : STATIC_SCHEDULE;
+  const { data: apiEvents, isLoading, isError, refetch } = useTimetable(dateStr);
+  // No fallback schedule: an empty timetable renders as empty. Substituting
+  // sample classes here hid the fact that the timetable call was 404ing.
+  const events: TimetableEvent[] = apiEvents ?? [];
 
   // Build week days
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -313,14 +266,41 @@ export const CalendarScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.timeline}
         showsVerticalScrollIndicator={false}
       >
-        {events.map((event, i) => (
-          <TimeRow
-            key={i}
-            event={event}
-            isLast={i === events.length - 1}
-            onTakeAttendance={() => handleTakeAttendance(event)}
-          />
-        ))}
+        {isLoading ? (
+          <View style={styles.timelineState}>
+            <ActivityIndicator color={TOKENS.plum} />
+          </View>
+        ) : isError ? (
+          <View style={styles.timelineState}>
+            <MaterialCommunityIcons
+              name="cloud-off-outline"
+              size={28}
+              color={TOKENS.ink3}
+            />
+            <Text style={styles.timelineStateText}>Couldn't load your timetable</Text>
+            <TouchableOpacity style={styles.timelineRetry} onPress={() => refetch()}>
+              <Text style={styles.timelineRetryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : events.length === 0 ? (
+          <View style={styles.timelineState}>
+            <MaterialCommunityIcons
+              name="calendar-blank-outline"
+              size={28}
+              color={TOKENS.ink3}
+            />
+            <Text style={styles.timelineStateText}>No classes scheduled</Text>
+          </View>
+        ) : (
+          events.map((event, i) => (
+            <TimeRow
+              key={i}
+              event={event}
+              isLast={i === events.length - 1}
+              onTakeAttendance={() => handleTakeAttendance(event)}
+            />
+          ))
+        )}
         <View style={{ height: 110 }} />
       </ScrollView>
     </SafeAreaView>
@@ -328,6 +308,20 @@ export const CalendarScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  timelineState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 10,
+  },
+  timelineStateText: { fontSize: 14, color: TOKENS.ink3 },
+  timelineRetry: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: TOKENS.plum,
+  },
+  timelineRetryText: { fontSize: 13, fontWeight: '600', color: TOKENS.paper },
   container: { flex: 1, backgroundColor: TOKENS.paper },
 
   header: {
@@ -457,17 +451,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  avatarRow: { flexDirection: 'row', alignItems: 'center' },
-  avatarWrap: {},
-  avatarOverflow: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarOverflowText: { fontSize: 9.5, fontWeight: '700', color: TOKENS.ink2 },
   attendanceBtn: {
     flexDirection: 'row',
     alignItems: 'center',

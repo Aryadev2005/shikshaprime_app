@@ -18,38 +18,9 @@ const client = apiClient.getClient();
 // This previously read `user?.role`, which was null after every app restart —
 // so students silently fell through to the teacher endpoints and got a 403.
 const isStudent = (): boolean => useAuthStore.getState().role === 'student';
-
-// ── Raw backend shapes (Sequelize JSON) — instivera-api's assignments module
-// returns model rows directly rather than a pre-shaped view-model, so this
-// adapter maps them into the app's existing Assignment/AssignmentDetail types.
-interface RawSubmission {
-  id: number;
-  student_id: string;
-  student_name?: string;
-  submission_text?: string;
-  file_url?: string;
-  submitted_at?: string;
-  marks_obtained?: number;
-  grade?: string;
-  feedback?: string;
-  status?: string;
-  created?: boolean;
-}
-
-interface RawAssignment {
-  id: number;
-  title: string;
-  description?: string;
-  detailed_instructions?: string;
-  type?: string;
-  due_date?: string;
-  maximum_marks?: number;
-  allow_late_submissions?: number;
-  file_url?: string;
-  subject?: { id: number; name: string; code: string };
-  class?: { id: number; name: string; code: string };
-  submissions?: RawSubmission[];
-}
+// Distinct from `!isStudent()`: admins reach the same screens, but the
+// submission/grading routes are gated `requireRole('teacher')` server-side.
+const isTeacher = (): boolean => useAuthStore.getState().role === 'teacher';
 
 // ── student-service shapes ───────────────────────────────────────────────────
 // student-service returns flat, pre-statused rows rather than the nested
@@ -116,57 +87,95 @@ const toStudentAssignmentDetail = (
   allowLateSubmissions: !!raw?.allow_late_submissions,
 });
 
-const deriveStatus = (raw: RawAssignment, mySubmission?: RawSubmission): Assignment['status'] => {
-  if (mySubmission?.status === 'graded') return 'GRADED';
-  if (mySubmission?.status === 'submitted') return 'SUBMITTED';
-  if (raw.due_date && new Date(raw.due_date) < new Date()) return 'OVERDUE';
-  return 'PENDING';
-};
+// ── teacher-service shapes ─────────────────────────────────────────
+// `getFacultyAssignments` / `getAssignmentById` return flat `teacher_assignments`
+// rows joined to subject/program/class names. Note `submissions` is a COUNT,
+// not a list — the submission rows come from a separate endpoint.
 
-const toAssignment = (raw: RawAssignment, studentView: boolean): Assignment => {
-  const mySubmission = studentView ? raw.submissions?.[0] : undefined;
-  return {
-    id: String(raw.id),
-    title: raw.title,
-    subjectName: raw.subject?.name ?? '',
-    dueDate: raw.due_date ?? '',
-    status: deriveStatus(raw, mySubmission),
-    progress: mySubmission ? 100 : 0,
-    grade: mySubmission?.grade,
-    type: raw.type,
-  };
-};
+interface RawTeacherAssignmentRow {
+  id: number;
+  title: string;
+  description?: string;
+  detailed_instructions?: string;
+  type?: string;
+  due_date?: string;
+  due_time?: string;
+  maximum_marks?: number;
+  allow_late_submissions?: number | boolean;
+  subject_id?: number;
+  subject_name?: string | null;
+  class_id?: number;
+  class_name?: string | null;
+  program_name?: string | null;
+  submissions?: number;
+  attachments?: Array<{ id: number; fileName: string; fileUrl: string | null }>;
+}
 
-const toSubmission = (raw: RawSubmission): AssignmentSubmission => ({
-  submissionId: String(raw.id),
-  studentId: raw.student_id,
-  studentName: raw.student_name,
+interface RawTeacherAssignmentList {
+  assignments: RawTeacherAssignmentRow[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+interface RawTeacherSubmissionRow {
+  assignment_id: number;
+  submission_id: number;
+  student_pk?: number;
+  student_id?: string;
+  student_name?: string;
+  roll_number?: string;
+  submitted_at?: string;
+  file_url?: string;
+  marks_obtained?: number;
+  grade?: string;
+  feedback?: string;
+  status?: string;
+}
+
+const teacherStatus = (dueDate?: string): Assignment['status'] =>
+  dueDate && new Date(dueDate) < new Date() ? 'OVERDUE' : 'PENDING';
+
+// The teacher list carries no per-assignment completion ratio (only a raw
+// submission count with no class size to divide by), so `progress` stays 0.
+const toTeacherAssignment = (raw: RawTeacherAssignmentRow): Assignment => ({
+  id: String(raw.id),
+  title: raw.title,
+  subjectName: raw.subject_name ?? '',
+  dueDate: raw.due_date ?? '',
+  status: teacherStatus(raw.due_date),
+  progress: 0,
+  type: raw.type,
+});
+
+const toTeacherSubmission = (raw: RawTeacherSubmissionRow): AssignmentSubmission => ({
+  submissionId: String(raw.submission_id),
+  studentId: raw.student_id ?? String(raw.student_pk ?? ''),
+  studentName: raw.student_name?.replace(/\s+/g, ' ').trim(),
   submissionDate: raw.submitted_at,
   grade: raw.grade,
   marksObtained: raw.marks_obtained,
   feedback: raw.feedback,
 });
 
-const toAssignmentDetail = (raw: RawAssignment, studentView: boolean): AssignmentDetail => {
-  const mySubmission = studentView ? raw.submissions?.[0] : undefined;
-  return {
-    id: String(raw.id),
-    title: raw.title,
-    description: raw.description,
-    instructions: raw.detailed_instructions,
-    subjectName: raw.subject?.name ?? '',
-    className: raw.class?.name,
-    dueDate: raw.due_date ?? '',
-    status: deriveStatus(raw, mySubmission),
-    grade: mySubmission?.grade,
-    marksObtained: mySubmission?.marks_obtained,
-    maxMarks: raw.maximum_marks,
-    fileUrl: raw.file_url,
-    type: raw.type,
-    allowLateSubmissions: !!raw.allow_late_submissions,
-    submissions: studentView ? undefined : raw.submissions?.map(toSubmission),
-  };
-};
+const toTeacherAssignmentDetail = (
+  raw: RawTeacherAssignmentRow,
+  submissions?: AssignmentSubmission[],
+): AssignmentDetail => ({
+  id: String(raw.id),
+  title: raw.title,
+  description: raw.description,
+  instructions: raw.detailed_instructions,
+  subjectName: raw.subject_name ?? '',
+  className: raw.class_name ?? undefined,
+  dueDate: raw.due_date ?? '',
+  status: teacherStatus(raw.due_date),
+  maxMarks: raw.maximum_marks,
+  fileUrl: raw.attachments?.[0]?.fileUrl ?? undefined,
+  type: raw.type,
+  allowLateSubmissions: !!raw.allow_late_submissions,
+  submissions,
+});
 
 export const assignmentApi = {
   async getAssignments(): Promise<AssignmentListResponse> {
@@ -196,11 +205,16 @@ export const assignmentApi = {
       };
     }
 
-    // TODO(teacher-service phase): still points at the old gateway path.
-    const response = await client.get<ApiResponse<RawAssignment[]>>(
-      '/assignments/teacher/list',
+    // getFacultyAssignments is paginated (server default limit 10) and derives
+    // the faculty from the token. There is no pagination UI, so one large page
+    // is requested; `total` is ignored beyond that. It returns no counters —
+    // the teacher list has no pending/submitted/graded notion server-side.
+    const response = await client.get<ApiResponse<RawTeacherAssignmentList>>(
+      '/api/teacher/assignments',
+      { params: { limit: 100, status: 'active' } },
     );
-    return { assignments: (response.data.data ?? []).map((a) => toAssignment(a, false)) };
+    const rows = response.data.data?.assignments ?? [];
+    return { assignments: rows.map(toTeacherAssignment) };
   },
 
   async getAssignmentById(id: string): Promise<AssignmentDetail> {
@@ -213,11 +227,26 @@ export const assignmentApi = {
       return toStudentAssignmentDetail(id, response.data.data);
     }
 
-    // TODO(teacher-service phase): still points at the old gateway path.
-    const response = await client.get<ApiResponse<RawAssignment>>(
-      `/assignments/teacher/${id}`,
+    const response = await client.get<ApiResponse<RawTeacherAssignmentRow>>(
+      `/api/teacher/assignments/${id}`,
     );
-    return toAssignmentDetail(response.data.data, false);
+
+    // The assignment row carries only a submission COUNT. The submission rows
+    // live on `/assignments/submitted`, which is teacher-scoped but has no
+    // assignment_id filter, so it is fetched and filtered client-side. Skipped
+    // for non-teachers (admins) because that route is `requireRole('teacher')`.
+    let submissions: AssignmentSubmission[] | undefined;
+    if (isTeacher()) {
+      const submitted = await client.get<ApiResponse<{ assignments: RawTeacherSubmissionRow[] }>>(
+        '/api/teacher/assignments/submitted',
+        { params: { limit: 200 } },
+      );
+      submissions = (submitted.data.data?.assignments ?? [])
+        .filter((row) => String(row.assignment_id) === String(id))
+        .map(toTeacherSubmission);
+    }
+
+    return toTeacherAssignmentDetail(response.data.data, submissions);
   },
 
   async submitAssignment(id: string, formData: FormData): Promise<SubmitAssignmentResult> {
@@ -246,44 +275,56 @@ export const assignmentApi = {
     };
   },
 
-  async createAssignment(data: CreateAssignmentPayload): Promise<AssignmentDetail> {
-    const response = await client.post<ApiResponse<RawAssignment>>('/assignments/teacher/create', {
+  // Returns only the new assignment's id: createAssignment responds with
+  // `data: <insertId>`, not the created row.
+  async createAssignment(data: CreateAssignmentPayload): Promise<{ id: string }> {
+    const response = await client.post<ApiResponse<number>>('/api/teacher/assignments', {
       title: data.title,
       description: data.description,
       detailed_instructions: data.instructions,
       class_id: data.class_id,
       subject_id: data.subject_id,
       due_date: data.due_date,
+      // The controller 400s without `type` and `due_time`, neither of which
+      // CreateAssignmentScreen collects. See INTEGRATION_LOG.md — the form
+      // needs both fields; these are the request defaults until it has them.
+      type: data.type ?? 'Assignment',
+      due_time: data.due_time ?? '23:59:00',
       allow_late_submissions: data.allow_late_submissions,
     });
-    return toAssignmentDetail(response.data.data, false);
+    return { id: String(response.data.data) };
   },
 
   async gradeSubmission(
     submissionId: string,
     data: GradeSubmissionPayload,
   ): Promise<void> {
-    await client.post(`/assignments/teacher/submissions/${submissionId}/grade`, data);
+    // PUT, not POST. The backend derives the letter grade from marks_obtained
+    // itself and ignores any `grade` sent, so only marks and feedback go up.
+    await client.put(`/api/teacher/submissions/${submissionId}/grade`, {
+      marks_obtained: data.marks_obtained,
+      feedback: data.feedback,
+    });
   },
 
+  // There is no combined metadata endpoint: teacher-service exposes one route
+  // per lookup under /api/teacher/metadata/*. Only the two the create form
+  // needs are fetched.
   async getAssignmentMetadata(): Promise<AssignmentMetadata> {
-    interface RawTeacherClass {
-      class?: { id: number; name: string; code: string };
-      subject?: { id: number; name: string; code: string };
+    interface RawLookupRow {
+      id: number;
+      name: string;
+      code?: string;
     }
-    const response = await client.get<ApiResponse<RawTeacherClass[]>>('/assignments/teacher/metadata');
-    const rows = response.data.data;
 
-    const subjectsById = new Map<string, { id: string; name: string }>();
-    const classesById = new Map<string, { id: string; name: string }>();
-    for (const row of rows) {
-      if (row.subject) subjectsById.set(String(row.subject.id), { id: String(row.subject.id), name: row.subject.name });
-      if (row.class) classesById.set(String(row.class.id), { id: String(row.class.id), name: row.class.name });
-    }
+    const [subjects, classes] = await Promise.all([
+      client.get<ApiResponse<RawLookupRow[]>>('/api/teacher/metadata/subjects'),
+      client.get<ApiResponse<RawLookupRow[]>>('/api/teacher/metadata/classes'),
+    ]);
 
     return {
-      subjects: Array.from(subjectsById.values()),
-      classes: Array.from(classesById.values()),
+      subjects: (subjects.data.data ?? []).map((s) => ({ id: String(s.id), name: s.name })),
+      classes: (classes.data.data ?? []).map((c) => ({ id: String(c.id), name: c.name })),
     };
   },
 };

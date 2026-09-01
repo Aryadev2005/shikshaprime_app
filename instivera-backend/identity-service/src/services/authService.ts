@@ -74,7 +74,16 @@ export class AuthService {
         };
     }
 
-    async changePassword(email: string, newPassword: string, tenant: string) {
+    /**
+     * SECURITY: this used to take only { email, newPassword } and was reachable
+     * unauthenticated, which meant anyone who knew an email address could take
+     * over that account. It now requires the caller's *current* password, and
+     * the route requires a valid session whose email matches `email`.
+     *
+     * A sessionless "forgot password" reset must NOT reuse this method — it
+     * needs its own endpoint gated on a verified OTP. See INTEGRATION_LOG.md.
+     */
+    async changePassword(email: string, currentPassword: string, newPassword: string, tenant: string) {
         const { User } = getTenantModels(tenant);
         const user = await User.findOne({
             where: { email }
@@ -82,6 +91,11 @@ export class AuthService {
 
         if (!user) {
             throw new AppError('User with this email not found', 404);
+        }
+
+        const match = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!match) {
+            throw new AppError('Current password is incorrect', 401);
         }
 
         const saltRounds = 10;

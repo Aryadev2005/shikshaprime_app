@@ -68,7 +68,10 @@ router.post("/validate-email", validateEmail);
 router.post("/send-email-otp", sendEmailOtp);
 router.post("/user-send-email-otp", userSendEmailOtp)
 router.post("/verify-email-otp", verifyEmailOtp);
-router.post("/change-password", changePassword);
+// SECURITY: requireAuth is load-bearing. Without it this endpoint accepted an
+// arbitrary { email, newPassword } from anyone and rewrote that user's password
+// — unauthenticated account takeover for any known email address.
+router.post("/change-password", requireAuth, changePassword);
 router.get("/sr/academic-years", getAcademicYears);
 router.get("/sr/classes", getClasses);
 router.get("/sr/departments", getDepartments);
