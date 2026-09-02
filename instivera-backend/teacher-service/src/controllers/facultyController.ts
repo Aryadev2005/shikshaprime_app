@@ -485,13 +485,16 @@ export async function getFacultyAssignments(req, res: Response, next: NextFuncti
 export async function getAssignmentById(req, res: Response, next: NextFunction) {
     try {
         const { assignmentId } = req.params;
-        const faculty_id = req.user?.id;
+        // The JWT carries {user_id, username, role, email} — there is no `id`
+        // claim, so the old `req.user?.id` was always undefined and the
+        // ownership clause downstream was silently dropped.
+        const faculty_id = await getFacultyIdFromUser(req.user, req.tenant);
 
         if (!assignmentId) {
             throw new AppError('Assignment ID is required', 400);
         }
 
-        const assignment = await assignmentService.getAssignmentById(parseInt(assignmentId), parseInt(faculty_id as string), req.tenant);
+        const assignment = await assignmentService.getAssignmentById(parseInt(assignmentId), faculty_id, req.tenant);
 
         if (!assignment) {
             throw new AppError('Assignment not found', 404);
@@ -533,7 +536,7 @@ export async function getAssignmentById(req, res: Response, next: NextFunction) 
 export async function updateAssignment(req, res: Response, next: NextFunction) {
     try {
         const { assignmentId } = req.params;
-        const faculty_id = req.user?.id;
+        const faculty_id = await getFacultyIdFromUser(req.user, req.tenant);
 
         if (!assignmentId) {
             throw new AppError('Assignment ID is required', 400);
@@ -542,7 +545,7 @@ export async function updateAssignment(req, res: Response, next: NextFunction) {
         const assignment = await assignmentService.updateAssignment(
             parseInt(assignmentId),
             req.body,
-            parseInt(faculty_id as string),
+            faculty_id,
             req.tenant
         );
 
@@ -572,13 +575,13 @@ export async function updateAssignment(req, res: Response, next: NextFunction) {
 export async function deleteAssignment(req, res: Response, next: NextFunction) {
     try {
         const { assignmentId } = req.params;
-        const faculty_id = req.user?.id;
+        const faculty_id = await getFacultyIdFromUser(req.user, req.tenant);
 
         if (!assignmentId) {
             throw new AppError('Assignment ID is required', 400);
         }
 
-        const deleted = await assignmentService.deleteAssignment(parseInt(assignmentId), parseInt(faculty_id as string), req.tenant);
+        const deleted = await assignmentService.deleteAssignment(parseInt(assignmentId), faculty_id, req.tenant);
 
 
         if (!deleted) {

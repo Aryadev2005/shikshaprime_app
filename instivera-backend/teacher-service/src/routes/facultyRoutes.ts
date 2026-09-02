@@ -71,8 +71,8 @@ router.get("/assignments", requireAuth, getFacultyAssignments); // Get current u
 router.get("/assignments/submitted", requireAuth, requireRole('teacher'), getSubmittedAssignmentsByFacultyId); 
 router.get("/faculty/:facultyId/assignments", requireAuth, getFacultyAssignments); // Keep for backward compatibility
 router.get("/assignments/:assignmentId", requireAuth, getAssignmentById);
-router.put("/assignments/:assignmentId", requireAuth, uploadAssignmentFiles, updateAssignment);
-router.delete("/assignments/:assignmentId", requireAuth, deleteAssignment);
+router.put("/assignments/:assignmentId", requireAuth, requireRole('teacher'), uploadAssignmentFiles, updateAssignment);
+router.delete("/assignments/:assignmentId", requireAuth, requireRole('teacher'), deleteAssignment);
 
 // Assignment submissions (teacher grading)
 router.get("/submissions/:submissionId", requireAuth, requireRole('teacher'), getSubmittedAssignmentBySubmissionId);

@@ -285,9 +285,19 @@ export class AssignmentService {
      */
     async deleteAssignment(assignmentId: number, facultyId: number, tenant: string): Promise<boolean> {
         try {
+            // Resolve ownership up front. The DELETE reports no affected-row
+            // count through QueryTypes.DELETE, so without this a non-owner's
+            // delete would return success while removing nothing.
+            const owned = await this.getAssignmentById(assignmentId, facultyId, tenant);
+            if (!owned) {
+                return false;
+            }
+
+            // The ownership column is `teacher_id`; the previous `faculty_id`
+            // names no column on this table.
             const query = `
                 DELETE FROM teacher_assignments 
-                WHERE id = :assignment_id ${facultyId ? 'AND faculty_id = :faculty_id' : ''}
+                WHERE id = :assignment_id ${facultyId ? 'AND teacher_id = :faculty_id' : ''}
             `;
 
             const replacements: any = { assignment_id: assignmentId };
@@ -295,12 +305,12 @@ export class AssignmentService {
                 replacements.faculty_id = facultyId;
             }
             const sequelize = getTenantSequelize(tenant);
-            const result = await sequelize.query(query, {
+            await sequelize.query(query, {
                 replacements,
                 type: QueryTypes.DELETE
             });
 
-            return true; // Assume success if no error is thrown
+            return true;
         } catch (error) {
             console.error("Error deleting assignment:", error);
             throw new AppError("Failed to delete assignment", 500);

@@ -72,7 +72,7 @@ router.post(
 );
 
 // GET dues (no audit)
-router.get("/dues/:student_id", getStudentDues);
+router.get("/dues/:student_id", requireAuth, getStudentDues);
 
 // UPDATE due status → needs old_value
 router.patch(
@@ -93,8 +93,8 @@ router.post(
 );
 
 // GET receipts (no audit)
-router.get("/receipts/:receipt_id", getReceipt);
-router.get("/receipts/student/:student_id", getStudentReceipts);
+router.get("/receipts/:receipt_id", requireAuth, getReceipt);
+router.get("/receipts/student/:student_id", requireAuth, getStudentReceipts);
 router.post(
   "/online/process",
   auditTrail("create", "online_payments"),

@@ -193,16 +193,29 @@ export const getStudentPayments = async (req, res: Response, next: NextFunction)
 
     const replacements: any = {};
 
-    // Restrict to a specific student
-    if (studentId) {
+    // Restrict to a specific student.
+    //
+    // A caller whose role is `student` is ALWAYS scoped to their own rows.
+    // The `studentId` and `studentEmail` query params are ignored for them —
+    // previously `studentId` was applied before the role branch, so passing
+    // another student's id returned that student's fee rows (IDOR).
+    const isStudent = String(authUser?.role).toLowerCase() === "student";
+
+    if (isStudent) {
+      if (authUser?.user_id) {
+        query += ` AND st.user_id = :userId`;
+        replacements.userId = authUser.user_id;
+      } else if (authUser?.email) {
+        query += ` AND st.email = :studentEmail`;
+        replacements.studentEmail = authUser.email;
+      } else {
+        // Role says student but the token identifies nobody — fail closed
+        // rather than falling through and returning the whole tenant.
+        throw new AppError("Unable to resolve the authenticated student", 403);
+      }
+    } else if (studentId) {
       query += ` AND sp.student_id = :studentId`;
       replacements.studentId = studentId;
-    } else if (authUser?.role === "student" && authUser?.user_id) {
-      query += ` AND st.user_id = :userId`;
-      replacements.userId = authUser.user_id;
-    } else if (authUser?.role === "student" && (studentEmail || authUser?.email)) {
-      query += ` AND st.email = :studentEmail`;
-      replacements.studentEmail = studentEmail || authUser?.email;
     }
 
     // Filters now use spd / pr
@@ -323,16 +336,29 @@ export const getStudentPaymentsReports = async (req, res: Response, next: NextFu
 
     const replacements: any = {};
 
-    // Restrict to a specific student
-    if (studentId) {
+    // Restrict to a specific student.
+    //
+    // A caller whose role is `student` is ALWAYS scoped to their own rows.
+    // The `studentId` and `studentEmail` query params are ignored for them —
+    // previously `studentId` was applied before the role branch, so passing
+    // another student's id returned that student's fee rows (IDOR).
+    const isStudent = String(authUser?.role).toLowerCase() === "student";
+
+    if (isStudent) {
+      if (authUser?.user_id) {
+        query += ` AND st.user_id = :userId`;
+        replacements.userId = authUser.user_id;
+      } else if (authUser?.email) {
+        query += ` AND st.email = :studentEmail`;
+        replacements.studentEmail = authUser.email;
+      } else {
+        // Role says student but the token identifies nobody — fail closed
+        // rather than falling through and returning the whole tenant.
+        throw new AppError("Unable to resolve the authenticated student", 403);
+      }
+    } else if (studentId) {
       query += ` AND sp.student_id = :studentId`;
       replacements.studentId = studentId;
-    } else if (authUser?.role === "student" && authUser?.user_id) {
-      query += ` AND st.user_id = :userId`;
-      replacements.userId = authUser.user_id;
-    } else if (authUser?.role === "student" && (studentEmail || authUser?.email)) {
-      query += ` AND st.email = :studentEmail`;
-      replacements.studentEmail = studentEmail || authUser?.email;
     }
 
     // Filters now use spd / pr
@@ -450,16 +476,29 @@ export const getStudentPaymentAssignments = async (req, res: Response, next: Nex
 
       const replacements: any = {};
 
-      // Restrict to a specific student
-      if (studentId) {
+      // Restrict to a specific student.
+      //
+      // A caller whose role is `student` is ALWAYS scoped to their own rows.
+      // The `studentId` and `studentEmail` query params are ignored for them —
+      // previously `studentId` was applied before the role branch, so passing
+      // another student's id returned that student's fee rows (IDOR).
+      const isStudent = String(authUser?.role).toLowerCase() === "student";
+
+      if (isStudent) {
+        if (authUser?.user_id) {
+          query += ` AND st.user_id = :userId`;
+          replacements.userId = authUser.user_id;
+        } else if (authUser?.email) {
+          query += ` AND st.email = :studentEmail`;
+          replacements.studentEmail = authUser.email;
+        } else {
+          // Role says student but the token identifies nobody — fail closed
+          // rather than falling through and returning the whole tenant.
+          throw new AppError("Unable to resolve the authenticated student", 403);
+        }
+      } else if (studentId) {
         query += ` AND sfa.student_id = :studentId`;
         replacements.studentId = studentId;
-      } else if (authUser?.role === "student" && authUser?.user_id) {
-        query += ` AND st.user_id = :userId`;
-        replacements.userId = authUser.user_id;
-      } else if (authUser?.role === "student" && (studentEmail || authUser?.email)) {
-        query += ` AND st.email = :studentEmail`;
-        replacements.studentEmail = studentEmail || authUser?.email;
       }
 
       // Filters now use sfa / spd / pr

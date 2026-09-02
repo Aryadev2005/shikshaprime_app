@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { FeeCollectionService } from "../services/feeCollectionService";
 import { getTenantSequelize } from "../server";
 import { QueryTypes } from "sequelize";
+import { assertCanReadStudent } from "../utils/studentScope";
 
 const feeCollectionService = new FeeCollectionService();
 
@@ -37,7 +38,12 @@ export const collectFee = async (req, res: Response, next: NextFunction) => {
 };
 export const getReceipt = async (req, res: Response, next: NextFunction) => {
   try {
-    const data = await feeCollectionService.getReceipt(+req.params.receipt_id, req.tenant);
+    const data: any = await feeCollectionService.getReceipt(+req.params.receipt_id, req.tenant);
+
+    // Receipt ids are enumerable, so the owner is checked after the lookup —
+    // the receipt itself is what names the student.
+    await assertCanReadStudent(req.user, Number(data?.student_id), req.tenant);
+
     return res.status(200).json({
       status: 1,      
       data: data,
@@ -50,6 +56,8 @@ export const getReceipt = async (req, res: Response, next: NextFunction) => {
 
 export const getStudentReceipts = async (req, res: Response, next: NextFunction) => {
   try {
+    await assertCanReadStudent(req.user, +req.params.student_id, req.tenant);
+
     const data = await feeCollectionService.getStudentReceipts(+req.params.student_id, req.tenant);
     return res.status(200).json({
       status: 1,      

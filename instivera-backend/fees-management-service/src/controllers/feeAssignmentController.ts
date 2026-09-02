@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { FeeAssignmentService } from "../services/feeAssignmentService";
 import { getTenantModels } from "../models";
 import { Op } from "sequelize";
+import { assertCanReadStudent } from "../utils/studentScope";
 
 
   const service = new FeeAssignmentService();
@@ -36,6 +37,8 @@ import { Op } from "sequelize";
 
   export const getStudentDues = async (req, res: Response, next: NextFunction) => {
     try {
+      await assertCanReadStudent(req.user, +req.params.student_id, req.tenant);
+
       const data = await service.getStudentDues(req.params.student_id, req.tenant);
       return res.status(200).json({
         status: 1,      
